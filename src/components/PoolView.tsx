@@ -149,7 +149,7 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
     if (pool.isPendingValidator) {
       validatorInfo = (
         <div>
-          <small>Pending Validator - Part: {pool.parts}</small>
+          <small>Pending Validator - Part: {pool.parts ? pool.parts.toString().substr(0, 8) + '..' + pool.parts.toString().substr(pool.parts.toString().length - 8, 8) : ''}</small>
           <br />
           <small># of Acks written: {pool.numberOfAcks}</small>
         </div>
