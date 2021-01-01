@@ -21,7 +21,7 @@ code {
 }
 
 .current-validator {
-  background-color: lightgreen;
+  background-color: #e6ffe6;
 }
 
 .not-to-be-elected {
@@ -29,5 +29,5 @@ code {
 }
 
 .is-pending-validator {
-  background-color: lightblue;
+  background-color: #e6f3ff;
 }
