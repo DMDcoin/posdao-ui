@@ -120,7 +120,6 @@ export default class Context {
 
   @observable public epochStartBlock!: number;
 
-
   // TODO: find better name
   @observable public canStakeOrWithdrawNow = false;
 
@@ -430,7 +429,6 @@ export default class Context {
   // TODO: we should probably get rid of either start or end block, can be calculated with epochDuration
   private stakingEpochStartTime!: number;
 
-
   private stakingEpochEndTime!: number;
 
   private stakeWithdrawDisallowPeriod!: number;
@@ -491,7 +489,6 @@ export default class Context {
     console.log('to be elected Pools:', toBeElectedPoolAddrs);
     const pendingValidatorAddrs = await this.vsContract.methods.getPendingValidators().call();
     console.log('pendingMiningPools:', pendingValidatorAddrs);
-
 
     console.log(`syncing ${activePoolAddrs.length} active and ${inactivePoolAddrs.length} inactive pools...`);
     const poolAddrs = activePoolAddrs.concat(inactivePoolAddrs);
@@ -554,7 +551,6 @@ export default class Context {
         numberOfAcksOfValidator = acksLengthBN.toNumber();
       }
 
-
       const newPool: IPool = {
         isActive: activePoolAddrs.indexOf(stakingAddress) >= 0,
         isToBeElected: toBeElectedPoolAddrs.indexOf(stakingAddress) >= 0,
@@ -616,7 +612,12 @@ export default class Context {
   // flags pools in the current validator set.
   // TODO: make this more robust (currently depends on assumption about the order of event handling)
   private async updateCurrentValidators(): Promise<void> {
-    const newCurrentValidators = (await this.vsContract.methods.getValidators().call()).sort();
+    const newCurrentValidatorsUnsorted = (await this.vsContract.methods.getValidators().call());
+
+    const newCurrentValidators = newCurrentValidatorsUnsorted.sort();
+
+    // apply filter here ?!
+
     // make sure both arrays were sorted beforehand
     if (this.currentValidators.toString() !== newCurrentValidators.toString()) {
       console.log(`validator set changed in block ${this.currentBlockNumber} to: ${newCurrentValidators}`);
