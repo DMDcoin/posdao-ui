@@ -164,7 +164,7 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
     if (pool.isPendingValidator) {
       validatorInfo = (
         <div>
-          <small>{`parts written: ${b2s(pool.parts.length > 0)} acks written: ${b2s(pool.numberOfAcks > 0)}` }</small>
+          <small>{`parts written: ${b2s(pool.parts != null && pool.parts.length > 0)} acks written: ${b2s(pool.numberOfAcks > 0)}` }</small>
           <br />
           <small>Pending Validator - Part : {pool.parts ? `${(((pool.parts.length - 2) / 2))} bytes` : 'none'}</small>
           <br />
