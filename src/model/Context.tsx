@@ -492,6 +492,9 @@ export default class Context {
 
     console.log(`syncing ${activePoolAddrs.length} active and ${inactivePoolAddrs.length} inactive pools...`);
     const poolAddrs = activePoolAddrs.concat(inactivePoolAddrs);
+
+    await this.updateCurrentValidators();
+
     await Promise.all(poolAddrs.map(async (stakingAddress) => {
       console.log(`checking pool ${stakingAddress}`);
       const ensNamePromise = this.getEnsNameOf(stakingAddress);
@@ -556,7 +559,7 @@ export default class Context {
         isToBeElected: toBeElectedPoolAddrs.indexOf(stakingAddress) >= 0,
         isPendingValidator,
         miningAddress,
-        isCurrentValidator: false, // set by handler for new blocks
+        isCurrentValidator: this.currentValidators.indexOf(miningAddress) >= 0, // set by handler for new blocks
         stakingAddress,
         ensName: '',
         candidateStake,
@@ -613,9 +616,7 @@ export default class Context {
   // TODO: make this more robust (currently depends on assumption about the order of event handling)
   private async updateCurrentValidators(): Promise<void> {
     const newCurrentValidatorsUnsorted = (await this.vsContract.methods.getValidators().call());
-
-    const newCurrentValidators = newCurrentValidatorsUnsorted.sort();
-
+    const newCurrentValidators = [...newCurrentValidatorsUnsorted].sort();
     // apply filter here ?!
 
     // make sure both arrays were sorted beforehand
