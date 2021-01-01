@@ -495,6 +495,8 @@ export default class Context {
 
     await this.updateCurrentValidators();
 
+    const pools: IPool[] = [];
+
     await Promise.all(poolAddrs.map(async (stakingAddress) => {
       console.log(`checking pool ${stakingAddress}`);
       const ensNamePromise = this.getEnsNameOf(stakingAddress);
@@ -586,8 +588,10 @@ export default class Context {
         newPool.ensName = name;
       });
 
-      this.pools.push(newPool);
+      pools.push(newPool);
     }));
+
+    this.pools = pools.sort((a, b) => a.miningAddress.localeCompare(b.miningAddress));
     console.log(`sync done, ${this.pools.length} pools in list`);
   }
 
