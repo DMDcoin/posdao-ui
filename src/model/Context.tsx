@@ -466,14 +466,31 @@ export default class Context {
   }
 
   private async retrieveValuesFromContract(): Promise<void> {
-    this.epochDuration = parseInt(await this.stContract.methods.stakingFixedEpochDuration().call());
-    this.epochStartBlock = parseInt(await this.stContract.methods.stakingEpochStartBlock().call());
+    const oldStakingEpoch = this.stakingEpoch;
     this.stakingEpoch = parseInt(await this.stContract.methods.stakingEpoch().call());
-    this.stakingEpochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
-    this.stakingEpochEndTime = parseInt(await this.stContract.methods.stakingFixedEpochEndTime().call());
-    this.stakeWithdrawDisallowPeriod = parseInt(await this.stContract.methods.stakingWithdrawDisallowPeriod().call());
+
+    if (this.stakingEpoch !== oldStakingEpoch) {
+      this.epochDuration = parseInt(await this.stContract.methods.stakingFixedEpochDuration().call());
+      this.epochStartBlock = parseInt(await this.stContract.methods.stakingEpochStartBlock().call());
+      this.stakingEpochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
+      this.stakingEpochEndTime = parseInt(await this.stContract.methods.stakingFixedEpochEndTime().call());
+      this.stakeWithdrawDisallowPeriod = parseInt(await this.stContract.methods.stakingWithdrawDisallowPeriod().call());
+    }
+
     this.myBalance = await this.web3.eth.getBalance(this.myAddr);
     this.canStakeOrWithdrawNow = await this.stContract.methods.areStakeAndWithdrawAllowed().call();
+  }
+
+  private async getBanCount(miningAddress: string): Promise<number> {
+    return parseInt(await this.vsContract.methods.banCounter(miningAddress).call());
+  }
+
+  private async getBannedUntil(miningAddress: string): Promise<BN> {
+    return new BN((await this.vsContract.methods.bannedUntil(miningAddress).call()));
+  }
+
+  private async getMyStake(stakingAddress: string): Promise<string> {
+    return this.stContract.methods.stakeAmount(stakingAddress, this.myAddr).call();
   }
 
   // (re-)builds the data structure this.pools based on the current state on chain
@@ -503,7 +520,7 @@ export default class Context {
       const miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
       const candidateStake = await this.stContract.methods.stakeAmount(stakingAddress, stakingAddress).call();
       const totalStake = await this.stContract.methods.stakeAmountTotal(stakingAddress).call();
-      const myStake = await this.stContract.methods.stakeAmount(stakingAddress, this.myAddr).call();
+      const myStake = await this.getMyStake(stakingAddress);
 
       const claimableStake = {
         amount: await this.stContract.methods.orderedWithdrawAmount(stakingAddress, this.myAddr).call(),
@@ -513,9 +530,8 @@ export default class Context {
       };
 
       const delegatorAddrs: Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
-      const bannedUntil = new BN((await this.vsContract.methods.bannedUntil(miningAddress).call()));
-
-      const banCount = parseInt(await this.vsContract.methods.banCounter(miningAddress).call());
+      const bannedUntil = await this.getBannedUntil(miningAddress);
+      const banCount = await this.getBanCount(miningAddress);
 
       // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
       // there are between 1 and n AddedPool events per pool. We're looking for the first one
@@ -659,6 +675,9 @@ export default class Context {
       pool.validatorStakeShare = await this.getValidatorStakeShare(pool.miningAddress);
       pool.validatorRewardShare = await this.getValidatorRewardShare(pool.stakingAddress);
       pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
+      pool.banCount = await this.getBanCount(pool.stakingAddress);
+      pool.bannedUntil = await this.getBannedUntil(pool.miningAddress);
+      pool.myStake = await this.getMyStake(pool.stakingAddress);
     });
   }
 
@@ -674,14 +693,12 @@ export default class Context {
     this.myBalance = await web3Instance.eth.getBalance(this.myAddr);
 
     // epoch change
-    if (this.currentTimestamp.gt(new BN(this.stakingEpochEndTime))) {
-      console.log(`updating stakingEpochEndBlock at block ${this.currentBlockNumber}`);
+    console.log(`updating stakingEpochEndBlock at block ${this.currentBlockNumber}`);
 
-      const oldEpoch = this.stakingEpoch;
-      await this.retrieveValuesFromContract();
-      if (oldEpoch !== this.stakingEpoch) {
-        await this.handleNewEpoch();
-      }
+    const oldEpoch = this.stakingEpoch;
+    await this.retrieveValuesFromContract();
+    if (oldEpoch !== this.stakingEpoch) {
+      await this.handleNewEpoch();
     }
 
     // TODO FIX: blocks left in Epoch can't get told.
