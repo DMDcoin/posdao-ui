@@ -96,6 +96,7 @@ export interface IPool {
   numberOfAcks: number; // if part of the treshhold key, or pending validator, this holds the number of ACKS
 }
 
+
 // TODO: dry-run / estimate gas before sending actual transactions
 export default class Context {
   @observable public currentBlockNumber!: number;
@@ -132,6 +133,38 @@ export default class Context {
   @observable public pools!: IPool[];
 
   @observable public currentValidators: Address[] = [];
+
+
+  // class PotData {
+  //   public governancePotAddress!: string;
+
+  //   public governancePotShareNominator!: number;
+
+  //   public governancePotShareDenominator!: number;
+
+  //   public deltaPotPayoutFraction!: number;
+
+  //   public reinsertPotPayoutFraction!: number;
+
+  //   @observable public reinsertPot!: number;
+
+  //   @observable public deltaPot!: number;
+
+  //   private brContract!: BlockRewardHbbftCoins;
+
+  //   // updates the data of the pot that changes very rarely and
+  //   // can almost considered static.
+  //   // this would require a site refresh to update that data.
+  //   public updateStaticPotData(contract: BlockRewardHbbftCoins) {
+  //     // TODO:
+  //   }
+
+  //   public updatePotDataAfterEpochSwitch(contract: BlockRewardHbbftCoins) {
+  //     // TODO:
+  //   }
+  // }
+
+  // public potData = new PotData();
 
   // TODO: properly implement singleton pattern
   // eslint-disable-next-line max-len
@@ -493,6 +526,89 @@ export default class Context {
     return this.stContract.methods.stakeAmount(stakingAddress, this.myAddr).call();
   }
 
+  private async updatePool(pool: IPool,
+    activePoolAddrs: Array<string>,
+    inactivePoolAddrs: Array<string>,
+    toBeElectedPoolAddrs: Array<string>,
+    pendingValidatorAddrs: Array<string>,
+    currentValidators: Array<string>): Promise<void> {
+    const { stakingAddress } = pool;
+    console.log(`checking pool ${stakingAddress}`);
+    const ensNamePromise = this.getEnsNameOf(pool.stakingAddress);
+
+    // TODO: figure out if this value can be cached or not.
+    pool.miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
+    const { miningAddress } = pool;
+
+    pool.isActive = activePoolAddrs.indexOf(stakingAddress) >= 0;
+    pool.isToBeElected = toBeElectedPoolAddrs.indexOf(stakingAddress) >= 0;
+
+    pool.isPendingValidator = pendingValidatorAddrs.indexOf(miningAddress) >= 0;
+    pool.isCurrentValidator = currentValidators.indexOf(miningAddress) >= 0;
+
+    pool.candidateStake = await this.stContract.methods.stakeAmount(stakingAddress, stakingAddress).call();
+    pool.totalStake = await this.stContract.methods.stakeAmountTotal(stakingAddress).call();
+    pool.myStake = await this.getMyStake(stakingAddress);
+
+    const claimableStake = {
+      amount: await this.stContract.methods.orderedWithdrawAmount(stakingAddress, this.myAddr).call(),
+      unlockEpoch: parseInt(await this.stContract.methods.orderWithdrawEpoch(stakingAddress, this.myAddr).call()) + 1,
+      // this lightweigt solution works, but will not trigger an update by itself when its value changes
+      canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
+    };
+
+    pool.claimableStake = claimableStake;
+
+    // TODO: delegatorAddrs ?!
+    // pool.delegatorAddrs = Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
+
+
+    pool.bannedUntil = await this.getBannedUntil(miningAddress);
+    pool.banCount = await this.getBanCount(miningAddress);
+
+    // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
+    // there are between 1 and n AddedPool events per pool. We're looking for the first one
+    // const poolAddedEvent = stEvents.filter((e) => e.event === 'AddedPool'
+    //  && e.returnValues.poolStakingAddress === stakingAddress)
+
+    //   .sort((e1, e2) => e1.blockNumber - e2.blockNumber);
+
+    //  console.assert(poolAddedEvent.length > 0, `no AddedPool event found for ${stakingAddress}`);
+
+    // if (poolAddedEvent.length === 0) {
+    //   console.error(stEvents);
+    // }
+
+    // result can be negative for pools added as "initial validators", thus setting 0 as min value
+    // const addedInEpoch = Math.max(0, Math.floor((poolAddedEvent[0].blockNumber
+    //  - this.posdaoStartBlock) / this.epochDuration));
+
+    // TODO FIX: what's the use for addedInEpoch ?!
+    // const addedInEpoch = 0;
+
+    // fetch and add the number of blocks authored per epoch since this pool was created
+    // const blocksAuthored = await [...Array(this.stakingEpoch - addedInEpoch)]
+    //   .map(async (_, i) => parseInt(await this.brContract.methods.blocksCreated(this.stakingEpoch
+    // - i, miningAddress).call()))
+    //   .reduce(async (acc, cur) => await acc + await cur);
+
+    // const blocksAuthored = 0;
+
+    if (pool.isPendingValidator) {
+      pool.parts = await this.kghContract.methods.parts(miningAddress).call();
+      const acksLengthBN = new BN(await this.kghContract.methods.getAcksLength(miningAddress).call());
+      pool.numberOfAcks = acksLengthBN.toNumber();
+    } else { // could just have lost the pendingValidatorState - so we clear this field ?!
+      pool.parts = '';
+      pool.numberOfAcks = 0;
+    }
+
+    // done in the background, non-blocking
+    ensNamePromise.then((name) => {
+      pool.ensName = name;
+    });
+  }
+
   // (re-)builds the data structure this.pools based on the current state on chain
   // This may become overkill in a busy system. It should be possible to do more fine-grained updates instead.
   // But for a start, this does the job.
@@ -512,97 +628,46 @@ export default class Context {
 
     await this.updateCurrentValidators();
 
+    const currentValidatorsUnsorted = (await this.vsContract.methods.getValidators().call());
+    const currentValidators: Array<string> = [...currentValidatorsUnsorted].sort();
+
     const pools: IPool[] = [];
 
     await Promise.all(poolAddrs.map(async (stakingAddress) => {
-      console.log(`checking pool ${stakingAddress}`);
-      const ensNamePromise = this.getEnsNameOf(stakingAddress);
-      const miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
-      const candidateStake = await this.stContract.methods.stakeAmount(stakingAddress, stakingAddress).call();
-      const totalStake = await this.stContract.methods.stakeAmountTotal(stakingAddress).call();
-      const myStake = await this.getMyStake(stakingAddress);
-
-      const claimableStake = {
-        amount: await this.stContract.methods.orderedWithdrawAmount(stakingAddress, this.myAddr).call(),
-        unlockEpoch: parseInt(await this.stContract.methods.orderWithdrawEpoch(stakingAddress, this.myAddr).call()) + 1,
-        // this lightweigt solution works, but will not trigger an update by itself when its value changes
-        canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
-      };
-
-      const delegatorAddrs: Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
-      const bannedUntil = await this.getBannedUntil(miningAddress);
-      const banCount = await this.getBanCount(miningAddress);
-
-      // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
-      // there are between 1 and n AddedPool events per pool. We're looking for the first one
-      // const poolAddedEvent = stEvents.filter((e) => e.event === 'AddedPool'
-      //  && e.returnValues.poolStakingAddress === stakingAddress)
-
-      //   .sort((e1, e2) => e1.blockNumber - e2.blockNumber);
-
-      //  console.assert(poolAddedEvent.length > 0, `no AddedPool event found for ${stakingAddress}`);
-
-      // if (poolAddedEvent.length === 0) {
-      //   console.error(stEvents);
-      // }
-
-      // result can be negative for pools added as "initial validators", thus setting 0 as min value
-      // const addedInEpoch = Math.max(0, Math.floor((poolAddedEvent[0].blockNumber
-      //  - this.posdaoStartBlock) / this.epochDuration));
-
-      // TODO FIX: what's the use for addedInEpoch ?!
-      const addedInEpoch = 0;
-
-      // fetch and add the number of blocks authored per epoch since this pool was created
-      // const blocksAuthored = await [...Array(this.stakingEpoch - addedInEpoch)]
-      //   .map(async (_, i) => parseInt(await this.brContract.methods.blocksCreated(this.stakingEpoch
-      // - i, miningAddress).call()))
-      //   .reduce(async (acc, cur) => await acc + await cur);
-
-      const blocksAuthored = 0;
-
-      const isPendingValidator = pendingValidatorAddrs.indexOf(miningAddress) >= 0;
-
-      let partsOfValidator = '';
-      let numberOfAcksOfValidator = 0;
-
-      if (isPendingValidator) {
-        partsOfValidator = await this.kghContract.methods.parts(miningAddress).call();
-        const acksLengthBN = new BN(await this.kghContract.methods.getAcksLength(miningAddress).call());
-        numberOfAcksOfValidator = acksLengthBN.toNumber();
-      }
-
       const newPool: IPool = {
-        isActive: activePoolAddrs.indexOf(stakingAddress) >= 0,
-        isToBeElected: toBeElectedPoolAddrs.indexOf(stakingAddress) >= 0,
-        isPendingValidator,
-        miningAddress,
-        isCurrentValidator: this.currentValidators.indexOf(miningAddress) >= 0, // set by handler for new blocks
+        isActive: false,
+        isToBeElected: false,
+        isPendingValidator: false,
+        miningAddress: '',
+        isCurrentValidator: false,
         stakingAddress,
         ensName: '',
-        candidateStake,
-        totalStake,
-        myStake,
-        claimableStake,
-        delegators: delegatorAddrs.map((addr) => ({ address: addr })),
-        isMe: stakingAddress === this.myAddr,
-        validatorRewardShare: await this.getValidatorRewardShare(stakingAddress),
-        validatorStakeShare: await this.getValidatorStakeShare(miningAddress),
-        claimableReward: await this.getClaimableReward(stakingAddress),
-        bannedUntil,
-        isBanned: () => bannedUntil.gt(new BN(this.currentTimestamp)),
-        banCount,
-        addedInEpoch,
-        blocksAuthored,
-        parts: partsOfValidator,
-        numberOfAcks: numberOfAcksOfValidator,
+        candidateStake: '0',
+        totalStake: '0',
+        myStake: '0',
+        claimableStake: {
+          amount: '0',
+          unlockEpoch: 0,
+          canClaimNow: () => false,
+        },
+        delegators: [],
+        isMe: false,
+        validatorRewardShare: 0,
+        validatorStakeShare: 0,
+        claimableReward: '0',
+        bannedUntil: new BN('0'),
+        isBanned: () => newPool.bannedUntil.gt(new BN(this.currentTimestamp)),
+        banCount: 0,
+        addedInEpoch: 0,
+        blocksAuthored: 0,
+        parts: '',
+        numberOfAcks: 0,
       };
-      console.log('adding:', newPool);
 
-      // done in the background, non-blocking
-      ensNamePromise.then((name) => {
-        newPool.ensName = name;
-      });
+      await this.updatePool(newPool, activePoolAddrs, inactivePoolAddrs,
+        toBeElectedPoolAddrs, pendingValidatorAddrs, currentValidators);
+
+      console.log('adding:', newPool);
 
       pools.push(newPool);
     }));
