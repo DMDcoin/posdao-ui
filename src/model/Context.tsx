@@ -63,6 +63,12 @@ interface IDelegator {
   address: Address;
 }
 
+export interface IClaimableStake {
+  amount: Amount;
+  unlockEpoch: number;
+  canClaimNow(): boolean;
+}
+
 // TODO: be consistent about type (string vs BN vs number) and unit (ATS vs wei) for amounts
 
 // TODO: when is it worth it creating a class / dedicated file?
@@ -78,11 +84,7 @@ export interface IPool {
   candidateStake: Amount;
   totalStake: Amount;
   myStake: Amount;
-  claimableStake: {
-    amount: Amount;
-    unlockEpoch: number;
-    canClaimNow(): boolean;
-  };
+  claimableStake: IClaimableStake;
   delegators: Array<IDelegator>; // TODO: how to cast to Array<IDelegator> ?
   isMe: boolean;
   validatorStakeShare: number; // percent
@@ -116,6 +118,8 @@ export default class Context {
   public candidateMinStake!: Amount;
 
   public delegatorMinStake!: Amount;
+
+  public hasWeb3BrowserSupport = false;
 
   @observable public stakingEpoch!: number;
 
@@ -174,12 +178,17 @@ export default class Context {
     ctx.web3Ens = new Web3(ensRpcUrl.toString());
 
     // doc: https://metamask.github.io/metamask-docs/API_Reference/Ethereum_Provider
-    if (!window.ethereum) {
-      throw Error('no web3 injected');
+    if (window.ethereum) {
+      console.log('web3 injection detected');
+      ctx.web3 = new Web3(window.ethereum);
+      ctx.hasWeb3BrowserSupport = true;
+      ctx.myAddr = ctx.web3.utils.toChecksumAddress((await window.ethereum.enable())[0]);
+      console.log('using address: ', ctx.myAddr);
+    } else {
+      console.log('no web3 detected, falling back.');
+      ctx.web3 = ctx.web3WS;
+      ctx.hasWeb3BrowserSupport = false;
     }
-
-    ctx.web3 = new Web3(window.ethereum);
-    ctx.myAddr = ctx.web3.utils.toChecksumAddress((await window.ethereum.enable())[0]);
 
     // test connections
     try {
@@ -194,17 +203,21 @@ export default class Context {
     // ctx.web3Ens.eth.getBlockNumber().catch(console.error); // test connection (non-blocking)
 
     // debug
-    window.web3 = ctx.web3;
+    // window.web3 = ctx.web3;
 
-    window.ethereum.on('accountsChanged', (accounts: Account[]) => {
-      alert(`metamask account changed to ${accounts}. You may want to reload...`);
-    });
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts: Account[]) => {
+        alert(`metamask account changed to ${accounts}. You may want to reload...`);
+      });
 
-    window.ethereum.on('chainChanged', (chainId: number) => {
-      alert(`metamask chain changed to ${chainId}. You may want to reload...`);
-    });
+      window.ethereum.on('chainChanged', (chainId: number) => {
+        alert(`metamask chain changed to ${chainId}. You may want to reload...`);
+      });
+    }
 
     ctx.defaultTxOpts.from = ctx.myAddr;
+
+    console.log('default: ', ctx.defaultTxOpts);
 
     await ctx.initContracts(validatorSetContractAddress);
 
@@ -479,8 +492,10 @@ export default class Context {
   private async initContracts(validatorSetContractAddress: Address): Promise<void> {
     try {
       // TODO: if a contract call fails, the stack trace doesn't show the actual line number.
+      console.log('validatorSet Contract: ', validatorSetContractAddress);
       this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
       const stAddress = await this.vsContract.methods.stakingContract().call();
+      console.log('stAddress: ', stAddress);
       this.stContract = new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
       const brAddress = await this.vsContract.methods.blockRewardContract().call();
       this.brContract = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
@@ -510,7 +525,10 @@ export default class Context {
       this.stakeWithdrawDisallowPeriod = parseInt(await this.stContract.methods.stakingWithdrawDisallowPeriod().call());
     }
 
-    this.myBalance = await this.web3.eth.getBalance(this.myAddr);
+    if (this.hasWeb3BrowserSupport) {
+      this.myBalance = await this.web3.eth.getBalance(this.myAddr);
+    }
+
     this.canStakeOrWithdrawNow = await this.stContract.methods.areStakeAndWithdrawAllowed().call();
   }
 
@@ -523,6 +541,9 @@ export default class Context {
   }
 
   private async getMyStake(stakingAddress: string): Promise<string> {
+    if (!this.hasWeb3BrowserSupport) {
+      return '0';
+    }
     return this.stContract.methods.stakeAmount(stakingAddress, this.myAddr).call();
   }
 
@@ -550,14 +571,24 @@ export default class Context {
     pool.totalStake = await this.stContract.methods.stakeAmountTotal(stakingAddress).call();
     pool.myStake = await this.getMyStake(stakingAddress);
 
-    const claimableStake = {
-      amount: await this.stContract.methods.orderedWithdrawAmount(stakingAddress, this.myAddr).call(),
-      unlockEpoch: parseInt(await this.stContract.methods.orderWithdrawEpoch(stakingAddress, this.myAddr).call()) + 1,
-      // this lightweigt solution works, but will not trigger an update by itself when its value changes
-      canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
-    };
+    if (this.hasWeb3BrowserSupport) {
+      const claimableStake = {
+        amount: await this.stContract.methods.orderedWithdrawAmount(stakingAddress, this.myAddr).call(),
+        unlockEpoch: parseInt(await this.stContract.methods.orderWithdrawEpoch(stakingAddress, this.myAddr).call()) + 1,
+        // this lightweigt solution works, but will not trigger an update by itself when its value changes
+        canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
+      };
+      pool.claimableStake = claimableStake;
+    } else {
+      const claimableStake = {
+        amount: '0',
+        unlockEpoch: 0,
+        // this lightweigt solution works, but will not trigger an update by itself when its value changes
+        canClaimNow: () => false,
+      };
+      pool.claimableStake = claimableStake;
+    }
 
-    pool.claimableStake = claimableStake;
 
     // TODO: delegatorAddrs ?!
     // pool.delegatorAddrs = Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
@@ -755,7 +786,10 @@ export default class Context {
   private async handleNewBlock(web3Instance: Web3, blockHeader: BlockHeader): Promise<void> {
     this.currentBlockNumber = blockHeader.number;
     this.currentTimestamp = new BN(blockHeader.timestamp);
-    this.myBalance = await web3Instance.eth.getBalance(this.myAddr);
+
+    if (this.hasWeb3BrowserSupport) {
+      this.myBalance = await web3Instance.eth.getBalance(this.myAddr);
+    }
 
     // epoch change
     console.log(`updating stakingEpochEndBlock at block ${this.currentBlockNumber}`);
