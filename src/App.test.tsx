@@ -8,8 +8,11 @@ it('renders without crashing', () => {
 
   const wsUrl = new URL(process.env.REACT_APP_WS_URL || 'ws://localhost:9541');
   const validatorSetContractAddress = process.env.REACT_APP_VALIDATORSET_CONTRACT || '0x1000000000000000000000000000000000000001';
+  const ensUrl = new URL( process.env.REACT_APP_ENS_RPC_URL || 'https://main-rpc.linkpool.io' );
+  
 
-  Context.initialize(wsUrl, validatorSetContractAddress).then((ctx) => {
+
+  Context.initialize(wsUrl, ensUrl, validatorSetContractAddress).then((ctx) => {
     ReactDOM.render(<App context={ctx} />, div);
     ReactDOM.unmountComponentAtNode(div);
   });

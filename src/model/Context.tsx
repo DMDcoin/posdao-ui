@@ -792,6 +792,9 @@ export default class Context {
   }
 
   private async getClaimableReward(stakingAddr: Address): Promise<Amount> {
+    if (!this.hasWeb3BrowserSupport) {
+      return '0';
+    }
     // getRewardAmount() fails if invoked for a staker without stake in the pool, thus we check that beforehand
     const hasStake: boolean = stakingAddr === this.myAddr ? true : (await this.stContract.methods.stakeFirstEpoch(stakingAddr, this.myAddr).call()) !== '0';
     return hasStake ? this.stContract.methods.getRewardAmount([], stakingAddr, this.myAddr).call() : '0';
