@@ -221,7 +221,8 @@ export default class Context {
 
     await ctx.initContracts(validatorSetContractAddress);
 
-    await ctx.syncPoolsState();
+    // treat the first think as "new epoch" - so all available data get's queried.
+    await ctx.syncPoolsState(true);
     ctx.isSyncingPools = false;
 
     await ctx.subscribeToEvents(ctx.web3WS);
@@ -556,7 +557,8 @@ export default class Context {
     activePoolAddrs: Array<string>,
     inactivePoolAddrs: Array<string>,
     toBeElectedPoolAddrs: Array<string>,
-    pendingValidatorAddrs: Array<string>): Promise<void> {
+    pendingValidatorAddrs: Array<string>,
+    isNewEpoch: boolean): Promise<void> {
     const { stakingAddress } = pool;
     console.log(`checking pool ${stakingAddress}`);
     const ensNamePromise = this.getEnsNameOf(pool.stakingAddress);
@@ -576,6 +578,10 @@ export default class Context {
     pool.myStake = await this.getMyStake(stakingAddress);
 
     if (this.hasWeb3BrowserSupport) {
+      // there is a time, after a validator was chosen,
+      // the state is still locked.
+      // so the stake can just get "unlocked" in a block between epoch phases.
+
       const claimableStake = {
         amount: await this.stContract.methods.orderedWithdrawAmount(stakingAddress, this.myAddr).call(),
         unlockEpoch: parseInt(await this.stContract.methods.orderWithdrawEpoch(stakingAddress, this.myAddr).call()) + 1,
@@ -583,6 +589,9 @@ export default class Context {
         canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
       };
       pool.claimableStake = claimableStake;
+      if (isNewEpoch) {
+        pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
+      }
     } else {
       const claimableStake = {
         amount: '0',
@@ -743,7 +752,7 @@ export default class Context {
 
   // flags pools in the current validator set.
   // TODO: make this more robust (currently depends on assumption about the order of event handling)
-  private async syncPoolsState(): Promise<void> {
+  private async syncPoolsState(isNewEpoch: boolean): Promise<void> {
     const newCurrentValidatorsUnsorted = (await this.vsContract.methods.getValidators().call());
     const newCurrentValidators = [...newCurrentValidatorsUnsorted].sort();
     // apply filter here ?!
@@ -775,7 +784,8 @@ export default class Context {
     });
 
     this.pools.forEach(async (p) => {
-      await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs, pendingValidatorAddrs);
+      await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs,
+        pendingValidatorAddrs, isNewEpoch);
     });
 
     this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
@@ -805,7 +815,7 @@ export default class Context {
     await this.pools.forEach(async (pool) => {
       pool.validatorStakeShare = await this.getValidatorStakeShare(pool.miningAddress);
       pool.validatorRewardShare = await this.getValidatorRewardShare(pool.stakingAddress);
-      pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
+
       pool.banCount = await this.getBanCount(pool.stakingAddress);
       pool.bannedUntil = await this.getBannedUntil(pool.miningAddress);
       pool.myStake = await this.getMyStake(pool.stakingAddress);
@@ -831,9 +841,7 @@ export default class Context {
     const oldEpoch = this.stakingEpoch;
     await this.retrieveValuesFromContract();
 
-    if (oldEpoch !== this.stakingEpoch) {
-      await this.handleNewEpoch();
-    }
+    const isNewEpoch = oldEpoch !== this.stakingEpoch;
 
     // TODO FIX: blocks left in Epoch can't get told.
     // const blocksLeftInEpoch = this.stakingEpochEndBlock - this.currentBlockNumber;
@@ -852,7 +860,7 @@ export default class Context {
     // TODO: don't do this in every block. There's no event we can rely on, but we can be smarter than this
     // await this.updateCurrentValidators();
 
-    await this.syncPoolsState();
+    await this.syncPoolsState(isNewEpoch);
   }
 
   private handledStEvents = new Set<number>();
@@ -867,34 +875,5 @@ export default class Context {
       }
       await this.handleNewBlock(web3Instance, blockHeader);
     });
-
-    this.stContract.events.allEvents({}, async (error, event) => {
-      if (error) {
-        console.log(`event error: ${error}`);
-      } else if (this.handledStEvents.has(event.blockNumber)) {
-        console.log(`staking contract event for block ${event.blockNumber} already handled, ignoring`);
-      } else {
-        this.handledStEvents.add(event.blockNumber);
-        console.log(`staking contract event ${event.event} originating from ${event.address} at block ${event.blockNumber}`);
-        if (event.event !== 'ClaimedReward') {
-          this.isSyncingPools = true;
-          await this.syncPoolsState();
-          this.isSyncingPools = false;
-        }
-      }
-    });
-
-    // TODO FIX: What's that ?
-    // listen to InitiateChange events. Those signal Parity to switch validator set.
-    // for logging purposes only at the moment
-    // re-read pools on any contract event
-    // this.vsContract.events.InitiateChange({}, async (error, event) => {
-    //   if (error) {
-    //     console.log(`event error: ${error}`);
-    //   } else {
-    //     console.log(`validatorset contract event ${event.event} at block ${event.blockNumber}`);
-    //     // TODO: if any handler is added here, make sure it's not triggered more than once per block
-    //   }
-    // });
   }
 }
