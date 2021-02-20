@@ -96,6 +96,10 @@ export interface IPool {
   blocksAuthored: number;
   parts: string; // if part of the treshhold key, or pending validator, this holds the PARTS
   numberOfAcks: number; // if part of the treshhold key, or pending validator, this holds the number of ACKS
+
+  // availability
+  availableSince: BN;
+  isAvailable(): boolean;
 }
 
 
@@ -682,6 +686,8 @@ export default class Context {
       blocksAuthored: 0,
       parts: '',
       numberOfAcks: 0,
+      availableSince: new BN('0'),
+      isAvailable: () => newPool.availableSince.gt(new BN(this.currentTimestamp)),
     };
     return newPool;
   }
