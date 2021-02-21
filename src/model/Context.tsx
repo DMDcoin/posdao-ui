@@ -546,6 +546,10 @@ export default class Context {
     return parseInt(await this.vsContract.methods.banCounter(miningAddress).call());
   }
 
+  private async getAvailableSince(miningAddress: string): Promise<BN> {
+    return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
+  }
+
   private async getBannedUntil(miningAddress: string): Promise<BN> {
     return new BN((await this.vsContract.methods.bannedUntil(miningAddress).call()));
   }
@@ -613,6 +617,8 @@ export default class Context {
 
     pool.bannedUntil = await this.getBannedUntil(miningAddress);
     pool.banCount = await this.getBanCount(miningAddress);
+
+    pool.availableSince = await this.getAvailableSince(miningAddress);
 
     // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
     // there are between 1 and n AddedPool events per pool. We're looking for the first one
