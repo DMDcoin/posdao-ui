@@ -135,7 +135,7 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
       return value ? '☑' : '☐';
     }
 
-    const rawInfo = `${b2s(pool.isMe)} self | ${b2s(pool.isActive)} active | ${b2s(pool.isCurrentValidator)} current | ${b2s(pool.isToBeElected)} to be elected | ${b2s(pool.isPendingValidator)} pending | ${b2s(pool.isBanned())} banned`;
+    const rawInfo = `${b2s(pool.isMe)} self | ${b2s(pool.isActive)} active | ${b2s(pool.isCurrentValidator)} current | ${b2s(pool.isAvailable())} available | ${b2s(pool.isToBeElected)} to be elected | ${b2s(pool.isPendingValidator)} pending | ${b2s(pool.isBanned())} banned }`;
 
     let extraInfo = `added in epoch ${pool.addedInEpoch}\n`;
     extraInfo += `blocks authored: ${pool.blocksAuthored}\n`;
