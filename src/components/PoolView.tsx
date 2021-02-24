@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import { action, computed, observable } from 'mobx';
 import { observer } from 'mobx-react';
+import BN from 'bn.js';
 import Context, { IPool } from '../model/Context';
 
 export interface PoolViewProps {
@@ -10,60 +11,80 @@ export interface PoolViewProps {
 
 @observer
 export default class PoolView extends React.Component<PoolViewProps, {}> {
+  // static text formating functions.
+
+  private static bigNumberToTimespan(input: BN) {
+    const seconds = input.toNumber();
+
+    if (seconds < 60) {
+      return `${seconds} seconds`;
+    } if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes} minutes`;
+    } if (seconds < 3600 * 24) {
+      const hours = Math.floor(seconds / 3600);
+      return `${hours} hours`;
+    }
+
+    const days = Math.floor(seconds / (3600 * 24));
+    return `${days} days`;
+  }
+
   @observable private amountStr = '';
   @observable private processing = false;
 
 
-    // TODO: this isn't updated when the state of checkCanStakeOrWithdrawNow() changes
-    @computed
+  // TODO: this isn't updated when the state of checkCanStakeOrWithdrawNow() changes
+  @computed
   private get buttonsEnabled(): boolean {
     const { context } = this.props;
     return context.canStakeOrWithdrawNow && !this.processing;
   }
 
 
-    // eslint-disable-next-line class-methods-use-this
-    private getPoolClasses(pool: IPool): string {
-      if (pool.isBanned()) {
-        return 'banned-pool';
-      }
-      if (!pool.isActive) {
-        return 'inactive-pool';
-      }
-      if (pool.isCurrentValidator) {
-        return 'current-validator';
-      }
-      if (!pool.isToBeElected) {
-        return 'not-to-be-elected';
-      }
-      if (pool.isPendingValidator) {
-        return 'is-pending-validator';
-      }
-      return '';
+  // eslint-disable-next-line class-methods-use-this
+  private getPoolClasses(pool: IPool): string {
+    if (pool.isBanned()) {
+      return 'banned-pool';
     }
+    if (!pool.isActive) {
+      return 'inactive-pool';
+    }
+    if (pool.isCurrentValidator) {
+      return 'current-validator';
+    }
+    if (!pool.isToBeElected) {
+      return 'not-to-be-elected';
+    }
+    if (pool.isPendingValidator) {
+      return 'is-pending-validator';
+    }
+    return '';
+  }
+
 
     // TODO: refactor to reduce duplicate code
     @action.bound
-    private async handleWithdrawButton(): Promise<void> {
-      this.processing = true;
-      const { context, pool } = this.props;
-      const withdrawAmount = parseInt(this.amountStr);
-      if (Number.isNaN(withdrawAmount)) {
-        alert('no amount entered');
-      } else if (!context.canStakeOrWithdrawNow) {
-        alert('outside staking/withdraw time window');
-      } else if (withdrawAmount > pool.myStake.asNumber()) {
-        alert('cannot withdraw as much');
-      } else {
-        const needsClaimTx = await context.withdraw(pool.stakingAddress, withdrawAmount);
-        if (needsClaimTx) {
-          alert('The withdrawn amount could not immediately be transferred to your account, because the pool is in the current or next validator set.\n'
+  private async handleWithdrawButton(): Promise<void> {
+    this.processing = true;
+    const { context, pool } = this.props;
+    const withdrawAmount = parseInt(this.amountStr);
+    if (Number.isNaN(withdrawAmount)) {
+      alert('no amount entered');
+    } else if (!context.canStakeOrWithdrawNow) {
+      alert('outside staking/withdraw time window');
+    } else if (withdrawAmount > pool.myStake.asNumber()) {
+      alert('cannot withdraw as much');
+    } else {
+      const needsClaimTx = await context.withdraw(pool.stakingAddress, withdrawAmount);
+      if (needsClaimTx) {
+        alert('The withdrawn amount could not immediately be transferred to your account, because the pool is in the current or next validator set.\n'
             + 'You need to wait for the next staking epoch and then click the then appearing "Claim" button in order to initiate the transfer!');
-        }
-        this.amountStr = '';
       }
-      this.processing = false;
+      this.amountStr = '';
     }
+    this.processing = false;
+  }
 
   @action.bound
     private async handleStakeButton(): Promise<void> {
@@ -135,12 +156,15 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
       return value ? '☑' : '☐';
     }
 
-    const rawInfo = `${b2s(pool.isMe)} self | ${b2s(pool.isActive)} active | ${b2s(pool.isCurrentValidator)} current | ${b2s(pool.isAvailable())} available | ${b2s(pool.isToBeElected)} to be elected | ${b2s(pool.isPendingValidator)} pending | ${b2s(pool.isBanned())} banned }`;
+    const rawInfo = `${b2s(pool.isMe)} self | ${b2s(pool.isActive)} active | ${b2s(pool.isCurrentValidator)} current | ${b2s(pool.isAvailable())} available | ${b2s(pool.isToBeElected)} to be elected | ${b2s(pool.isPendingValidator)} pending | ${b2s(pool.isBanned())} banned`;
 
     let extraInfo = `added in epoch ${pool.addedInEpoch}\n`;
     extraInfo += `blocks authored: ${pool.blocksAuthored}\n`;
     if (pool.isCurrentValidator) {
       extraInfo += 'in validator set of current epoch\n';
+    }
+    if (!pool.isAvailable() && !pool.isToBeElected) {
+      extraInfo += `requires to notify availability. Not available since ${PoolView.bigNumberToTimespan(pool.availableSince)}`;
     }
     if (pool.banCount > 0) {
       extraInfo += `ban counter: ${pool.banCount}\n`;
