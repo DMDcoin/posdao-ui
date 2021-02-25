@@ -63,6 +63,12 @@ interface IDelegator {
   address: Address;
 }
 
+export interface IClaimableStake {
+  amount: Amount;
+  unlockEpoch: number;
+  canClaimNow(): boolean;
+}
+
 // TODO: be consistent about type (string vs BN vs number) and unit (ATS vs wei) for amounts
 
 // TODO: when is it worth it creating a class / dedicated file?
@@ -78,11 +84,7 @@ export interface IPool {
   candidateStake: Amount;
   totalStake: Amount;
   myStake: Amount;
-  claimableStake: {
-    amount: Amount;
-    unlockEpoch: number;
-    canClaimNow(): boolean;
-  };
+  claimableStake: IClaimableStake;
   delegators: Array<IDelegator>; // TODO: how to cast to Array<IDelegator> ?
   isMe: boolean;
   validatorStakeShare: number; // percent
@@ -94,7 +96,12 @@ export interface IPool {
   blocksAuthored: number;
   parts: string; // if part of the treshhold key, or pending validator, this holds the PARTS
   numberOfAcks: number; // if part of the treshhold key, or pending validator, this holds the number of ACKS
+
+  // availability
+  availableSince: BN;
+  isAvailable(): boolean;
 }
+
 
 // TODO: dry-run / estimate gas before sending actual transactions
 export default class Context {
@@ -110,16 +117,17 @@ export default class Context {
 
   public coinSymbol = 'DMD';
 
-  public epochDuration!: number;
+  public epochDuration!: number; // currently not changeable
 
   public candidateMinStake!: Amount;
 
   public delegatorMinStake!: Amount;
 
+  public hasWeb3BrowserSupport = false;
+
   @observable public stakingEpoch!: number;
 
   @observable public epochStartBlock!: number;
-
 
   // TODO: find better name
   @observable public canStakeOrWithdrawNow = false;
@@ -130,9 +138,41 @@ export default class Context {
 
   @observable public isSyncingPools = true;
 
-  @observable public pools!: IPool[];
+  @observable public pools: IPool[] = [];
 
   @observable public currentValidators: Address[] = [];
+
+
+  // class PotData {
+  //   public governancePotAddress!: string;
+
+  //   public governancePotShareNominator!: number;
+
+  //   public governancePotShareDenominator!: number;
+
+  //   public deltaPotPayoutFraction!: number;
+
+  //   public reinsertPotPayoutFraction!: number;
+
+  //   @observable public reinsertPot!: number;
+
+  //   @observable public deltaPot!: number;
+
+  //   private brContract!: BlockRewardHbbftCoins;
+
+  //   // updates the data of the pot that changes very rarely and
+  //   // can almost considered static.
+  //   // this would require a site refresh to update that data.
+  //   public updateStaticPotData(contract: BlockRewardHbbftCoins) {
+  //     // TODO:
+  //   }
+
+  //   public updatePotDataAfterEpochSwitch(contract: BlockRewardHbbftCoins) {
+  //     // TODO:
+  //   }
+  // }
+
+  // public potData = new PotData();
 
   // TODO: properly implement singleton pattern
   // eslint-disable-next-line max-len
@@ -142,12 +182,17 @@ export default class Context {
     ctx.web3Ens = new Web3(ensRpcUrl.toString());
 
     // doc: https://metamask.github.io/metamask-docs/API_Reference/Ethereum_Provider
-    if (!window.ethereum) {
-      throw Error('no web3 injected');
+    if (window.ethereum) {
+      console.log('web3 injection detected');
+      ctx.web3 = new Web3(window.ethereum);
+      ctx.hasWeb3BrowserSupport = true;
+      ctx.myAddr = ctx.web3.utils.toChecksumAddress((await window.ethereum.enable())[0]);
+      console.log('using address: ', ctx.myAddr);
+    } else {
+      console.log('no web3 detected, falling back.');
+      ctx.web3 = ctx.web3WS;
+      ctx.hasWeb3BrowserSupport = false;
     }
-
-    ctx.web3 = new Web3(window.ethereum);
-    ctx.myAddr = ctx.web3.utils.toChecksumAddress((await window.ethereum.enable())[0]);
 
     // test connections
     try {
@@ -162,21 +207,26 @@ export default class Context {
     // ctx.web3Ens.eth.getBlockNumber().catch(console.error); // test connection (non-blocking)
 
     // debug
-    window.web3 = ctx.web3;
+    // window.web3 = ctx.web3;
 
-    window.ethereum.on('accountsChanged', (accounts: Account[]) => {
-      alert(`metamask account changed to ${accounts}. You may want to reload...`);
-    });
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts: Account[]) => {
+        alert(`metamask account changed to ${accounts}. You may want to reload...`);
+      });
 
-    window.ethereum.on('chainChanged', (chainId: number) => {
-      alert(`metamask chain changed to ${chainId}. You may want to reload...`);
-    });
+      window.ethereum.on('chainChanged', (chainId: number) => {
+        alert(`metamask chain changed to ${chainId}. You may want to reload...`);
+      });
+    }
 
     ctx.defaultTxOpts.from = ctx.myAddr;
 
+    console.log('default: ', ctx.defaultTxOpts);
+
     await ctx.initContracts(validatorSetContractAddress);
 
-    await ctx.syncPoolsState();
+    // treat the first think as "new epoch" - so all available data get's queried.
+    await ctx.syncPoolsState(true);
     ctx.isSyncingPools = false;
 
     await ctx.subscribeToEvents(ctx.web3WS);
@@ -430,7 +480,6 @@ export default class Context {
   // TODO: we should probably get rid of either start or end block, can be calculated with epochDuration
   private stakingEpochStartTime!: number;
 
-
   private stakingEpochEndTime!: number;
 
   private stakeWithdrawDisallowPeriod!: number;
@@ -448,8 +497,10 @@ export default class Context {
   private async initContracts(validatorSetContractAddress: Address): Promise<void> {
     try {
       // TODO: if a contract call fails, the stack trace doesn't show the actual line number.
+      console.log('validatorSet Contract: ', validatorSetContractAddress);
       this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
       const stAddress = await this.vsContract.methods.stakingContract().call();
+      console.log('stAddress: ', stAddress);
       this.stContract = new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
       const brAddress = await this.vsContract.methods.blockRewardContract().call();
       this.brContract = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
@@ -463,45 +514,81 @@ export default class Context {
     this.candidateMinStake = await this.stContract.methods.candidateMinStake().call();
     this.delegatorMinStake = await this.stContract.methods.delegatorMinStake().call();
 
+    // those values are asumed to be not changeable.
+    this.epochDuration = parseInt(await this.stContract.methods.stakingFixedEpochDuration().call());
+    this.stakeWithdrawDisallowPeriod = parseInt(await this.stContract.methods.stakingWithdrawDisallowPeriod().call());
+
+
     await this.retrieveValuesFromContract();
     // this.posdaoStartBlock = this.stakingEpochStartBlock - this.stakingEpoch * this.epochDuration;
   }
 
   private async retrieveValuesFromContract(): Promise<void> {
-    this.epochDuration = parseInt(await this.stContract.methods.stakingFixedEpochDuration().call());
-    this.epochStartBlock = parseInt(await this.stContract.methods.stakingEpochStartBlock().call());
+    const oldStakingEpoch = this.stakingEpoch;
     this.stakingEpoch = parseInt(await this.stContract.methods.stakingEpoch().call());
-    this.stakingEpochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
-    this.stakingEpochEndTime = parseInt(await this.stContract.methods.stakingFixedEpochEndTime().call());
-    this.stakeWithdrawDisallowPeriod = parseInt(await this.stContract.methods.stakingWithdrawDisallowPeriod().call());
-    this.myBalance = await this.web3.eth.getBalance(this.myAddr);
+
+    if (this.stakingEpoch !== oldStakingEpoch) {
+      this.epochStartBlock = parseInt(await this.stContract.methods.stakingEpochStartBlock().call());
+      this.stakingEpochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
+
+      // could be calculated instead of called from smart contract?!
+      this.stakingEpochEndTime = parseInt(await this.stContract.methods.stakingFixedEpochEndTime().call());
+    }
+
+    if (this.hasWeb3BrowserSupport) {
+      this.myBalance = await this.web3.eth.getBalance(this.myAddr);
+    }
+
     this.canStakeOrWithdrawNow = await this.stContract.methods.areStakeAndWithdrawAllowed().call();
   }
 
-  // (re-)builds the data structure this.pools based on the current state on chain
-  // This may become overkill in a busy system. It should be possible to do more fine-grained updates instead.
-  // But for a start, this does the job.
-  private async syncPoolsState(): Promise<void> {
-    this.pools = [];
-    const activePoolAddrs: Array<string> = await this.stContract.methods.getPools().call();
-    console.log('active Pools:', activePoolAddrs);
-    const inactivePoolAddrs: Array<string> = await this.stContract.methods.getPoolsInactive().call();
-    console.log('inactive Pools:', inactivePoolAddrs);
-    const toBeElectedPoolAddrs = await this.stContract.methods.getPoolsToBeElected().call();
-    console.log('to be elected Pools:', toBeElectedPoolAddrs);
-    const pendingValidatorAddrs = await this.vsContract.methods.getPendingValidators().call();
-    console.log('pendingMiningPools:', pendingValidatorAddrs);
+  private async getBanCount(miningAddress: string): Promise<number> {
+    return parseInt(await this.vsContract.methods.banCounter(miningAddress).call());
+  }
 
+  private async getAvailableSince(miningAddress: string): Promise<BN> {
+    return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
+  }
 
-    console.log(`syncing ${activePoolAddrs.length} active and ${inactivePoolAddrs.length} inactive pools...`);
-    const poolAddrs = activePoolAddrs.concat(inactivePoolAddrs);
-    await Promise.all(poolAddrs.map(async (stakingAddress) => {
-      console.log(`checking pool ${stakingAddress}`);
-      const ensNamePromise = this.getEnsNameOf(stakingAddress);
-      const miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
-      const candidateStake = await this.stContract.methods.stakeAmount(stakingAddress, stakingAddress).call();
-      const totalStake = await this.stContract.methods.stakeAmountTotal(stakingAddress).call();
-      const myStake = await this.stContract.methods.stakeAmount(stakingAddress, this.myAddr).call();
+  private async getBannedUntil(miningAddress: string): Promise<BN> {
+    return new BN((await this.vsContract.methods.bannedUntil(miningAddress).call()));
+  }
+
+  private async getMyStake(stakingAddress: string): Promise<string> {
+    if (!this.hasWeb3BrowserSupport) {
+      return '0';
+    }
+    return this.stContract.methods.stakeAmount(stakingAddress, this.myAddr).call();
+  }
+
+  private async updatePool(pool: IPool,
+    activePoolAddrs: Array<string>,
+    inactivePoolAddrs: Array<string>,
+    toBeElectedPoolAddrs: Array<string>,
+    pendingValidatorAddrs: Array<string>,
+    isNewEpoch: boolean): Promise<void> {
+    const { stakingAddress } = pool;
+    console.log(`checking pool ${stakingAddress}`);
+    const ensNamePromise = this.getEnsNameOf(pool.stakingAddress);
+
+    // TODO: figure out if this value can be cached or not.
+    pool.miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
+    const { miningAddress } = pool;
+
+    pool.isActive = activePoolAddrs.indexOf(stakingAddress) >= 0;
+    pool.isToBeElected = toBeElectedPoolAddrs.indexOf(stakingAddress) >= 0;
+
+    pool.isPendingValidator = pendingValidatorAddrs.indexOf(miningAddress) >= 0;
+    pool.isCurrentValidator = this.currentValidators.indexOf(miningAddress) >= 0;
+
+    pool.candidateStake = await this.stContract.methods.stakeAmount(stakingAddress, stakingAddress).call();
+    pool.totalStake = await this.stContract.methods.stakeAmountTotal(stakingAddress).call();
+    pool.myStake = await this.getMyStake(stakingAddress);
+
+    if (this.hasWeb3BrowserSupport) {
+      // there is a time, after a validator was chosen,
+      // the state is still locked.
+      // so the stake can just get "unlocked" in a block between epoch phases.
 
       const claimableStake = {
         amount: await this.stContract.methods.orderedWithdrawAmount(stakingAddress, this.myAddr).call(),
@@ -509,88 +596,150 @@ export default class Context {
         // this lightweigt solution works, but will not trigger an update by itself when its value changes
         canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
       };
-
-      const delegatorAddrs: Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
-      const bannedUntil = new BN((await this.vsContract.methods.bannedUntil(miningAddress).call()));
-
-      const banCount = parseInt(await this.vsContract.methods.banCounter(miningAddress).call());
-
-      // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
-      // there are between 1 and n AddedPool events per pool. We're looking for the first one
-      // const poolAddedEvent = stEvents.filter((e) => e.event === 'AddedPool'
-      //  && e.returnValues.poolStakingAddress === stakingAddress)
-
-      //   .sort((e1, e2) => e1.blockNumber - e2.blockNumber);
-
-      //  console.assert(poolAddedEvent.length > 0, `no AddedPool event found for ${stakingAddress}`);
-
-      // if (poolAddedEvent.length === 0) {
-      //   console.error(stEvents);
-      // }
-
-      // result can be negative for pools added as "initial validators", thus setting 0 as min value
-      // const addedInEpoch = Math.max(0, Math.floor((poolAddedEvent[0].blockNumber
-      //  - this.posdaoStartBlock) / this.epochDuration));
-
-      // TODO FIX: what's the use for addedInEpoch ?!
-      const addedInEpoch = 0;
-
-      // fetch and add the number of blocks authored per epoch since this pool was created
-      // const blocksAuthored = await [...Array(this.stakingEpoch - addedInEpoch)]
-      //   .map(async (_, i) => parseInt(await this.brContract.methods.blocksCreated(this.stakingEpoch
-      // - i, miningAddress).call()))
-      //   .reduce(async (acc, cur) => await acc + await cur);
-
-      const blocksAuthored = 0;
-
-      const isPendingValidator = pendingValidatorAddrs.indexOf(miningAddress) >= 0;
-
-      let partsOfValidator = '';
-      let numberOfAcksOfValidator = 0;
-
-      if (isPendingValidator) {
-        partsOfValidator = await this.kghContract.methods.parts(miningAddress).call();
-        const acksLengthBN = new BN(await this.kghContract.methods.getAcksLength(miningAddress).call());
-        numberOfAcksOfValidator = acksLengthBN.toNumber();
+      pool.claimableStake = claimableStake;
+      if (isNewEpoch) {
+        pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
       }
-
-
-      const newPool: IPool = {
-        isActive: activePoolAddrs.indexOf(stakingAddress) >= 0,
-        isToBeElected: toBeElectedPoolAddrs.indexOf(stakingAddress) >= 0,
-        isPendingValidator,
-        miningAddress,
-        isCurrentValidator: false, // set by handler for new blocks
-        stakingAddress,
-        ensName: '',
-        candidateStake,
-        totalStake,
-        myStake,
-        claimableStake,
-        delegators: delegatorAddrs.map((addr) => ({ address: addr })),
-        isMe: stakingAddress === this.myAddr,
-        validatorRewardShare: await this.getValidatorRewardShare(stakingAddress),
-        validatorStakeShare: await this.getValidatorStakeShare(miningAddress),
-        claimableReward: await this.getClaimableReward(stakingAddress),
-        bannedUntil,
-        isBanned: () => bannedUntil.gt(new BN(this.currentTimestamp)),
-        banCount,
-        addedInEpoch,
-        blocksAuthored,
-        parts: partsOfValidator,
-        numberOfAcks: numberOfAcksOfValidator,
+    } else {
+      const claimableStake = {
+        amount: '0',
+        unlockEpoch: 0,
+        // this lightweigt solution works, but will not trigger an update by itself when its value changes
+        canClaimNow: () => false,
       };
-      console.log('adding:', newPool);
+      pool.claimableStake = claimableStake;
+    }
 
-      // done in the background, non-blocking
-      ensNamePromise.then((name) => {
-        newPool.ensName = name;
-      });
 
-      this.pools.push(newPool);
-    }));
-    console.log(`sync done, ${this.pools.length} pools in list`);
+    // TODO: delegatorAddrs ?!
+    // pool.delegatorAddrs = Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
+
+
+    pool.bannedUntil = await this.getBannedUntil(miningAddress);
+    pool.banCount = await this.getBanCount(miningAddress);
+
+    pool.availableSince = await this.getAvailableSince(miningAddress);
+
+    // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
+    // there are between 1 and n AddedPool events per pool. We're looking for the first one
+    // const poolAddedEvent = stEvents.filter((e) => e.event === 'AddedPool'
+    //  && e.returnValues.poolStakingAddress === stakingAddress)
+
+    //   .sort((e1, e2) => e1.blockNumber - e2.blockNumber);
+
+    //  console.assert(poolAddedEvent.length > 0, `no AddedPool event found for ${stakingAddress}`);
+
+    // if (poolAddedEvent.length === 0) {
+    //   console.error(stEvents);
+    // }
+
+    // result can be negative for pools added as "initial validators", thus setting 0 as min value
+    // const addedInEpoch = Math.max(0, Math.floor((poolAddedEvent[0].blockNumber
+    //  - this.posdaoStartBlock) / this.epochDuration));
+
+    // TODO FIX: what's the use for addedInEpoch ?!
+    // const addedInEpoch = 0;
+
+    // fetch and add the number of blocks authored per epoch since this pool was created
+    // const blocksAuthored = await [...Array(this.stakingEpoch - addedInEpoch)]
+    //   .map(async (_, i) => parseInt(await this.brContract.methods.blocksCreated(this.stakingEpoch
+    // - i, miningAddress).call()))
+    //   .reduce(async (acc, cur) => await acc + await cur);
+
+    // const blocksAuthored = 0;
+
+    if (pool.isPendingValidator) {
+      pool.parts = await this.kghContract.methods.parts(miningAddress).call();
+      const acksLengthBN = new BN(await this.kghContract.methods.getAcksLength(miningAddress).call());
+      pool.numberOfAcks = acksLengthBN.toNumber();
+    } else { // could just have lost the pendingValidatorState - so we clear this field ?!
+      pool.parts = '';
+      pool.numberOfAcks = 0;
+    }
+
+    // done in the background, non-blocking
+    ensNamePromise.then((name) => {
+      pool.ensName = name;
+    });
   }
+
+  private createEmptyPool(stakingAddress: string): IPool {
+    const newPool: IPool = {
+      isActive: false,
+      isToBeElected: false,
+      isPendingValidator: false,
+      miningAddress: '',
+      isCurrentValidator: false,
+      stakingAddress,
+      ensName: '',
+      candidateStake: '0',
+      totalStake: '0',
+      myStake: '0',
+      claimableStake: {
+        amount: '0',
+        unlockEpoch: 0,
+        canClaimNow: () => false,
+      },
+      delegators: [],
+      isMe: false,
+      validatorRewardShare: 0,
+      validatorStakeShare: 0,
+      claimableReward: '0',
+      bannedUntil: new BN('0'),
+      isBanned: () => newPool.bannedUntil.gt(new BN(this.currentTimestamp)),
+      banCount: 0,
+      addedInEpoch: 0,
+      blocksAuthored: 0,
+      parts: '',
+      numberOfAcks: 0,
+      availableSince: new BN('0'),
+      isAvailable: () => newPool.availableSince.gt(new BN(this.currentTimestamp)),
+    };
+    return newPool;
+  }
+
+
+  // (re-)builds the data structure this.pools based on the current state on chain
+  // This may become overkill in a busy system. It should be possible to do more fine-grained updates instead.
+  // But for a start, this does the job.
+  // private async syncPoolsState(): Promise<void> {
+
+  // this.pools = [];
+  // const activePoolAddrs: Array<string> = await this.stContract.methods.getPools().call();
+  // console.log('active Pools:', activePoolAddrs);
+  // const inactivePoolAddrs: Array<string> = await this.stContract.methods.getPoolsInactive().call();
+  // console.log('inactive Pools:', inactivePoolAddrs);
+  // const toBeElectedPoolAddrs = await this.stContract.methods.getPoolsToBeElected().call();
+  // console.log('to be elected Pools:', toBeElectedPoolAddrs);
+  // const pendingValidatorAddrs = await this.vsContract.methods.getPendingValidators().call();
+  // console.log('pendingMiningPools:', pendingValidatorAddrs);
+
+  // console.log(`syncing ${activePoolAddrs.length} active and ${inactivePoolAddrs.length} inactive pools...`);
+  // const poolAddrs = activePoolAddrs.concat(inactivePoolAddrs);
+
+  // await this.updateCurrentValidators();
+
+  // const currentValidatorsUnsorted = (await this.vsContract.methods.getValidators().call());
+  // const currentValidators: Array<string> = [...currentValidatorsUnsorted].sort();
+
+  // this.currentValidators = currentValidators;
+
+  // const pools: IPool[] = [];
+
+  // await Promise.all(poolAddrs.map(async (stakingAddress) => {
+
+  //   const newPool: IPool = this.createEmptyPool(stakingAddress);
+  //   await this.updatePool(newPool, activePoolAddrs, inactivePoolAddrs,
+  //     toBeElectedPoolAddrs, pendingValidatorAddrs);
+
+  //   console.log('adding:', newPool);
+
+  //   pools.push(newPool);
+  // }));
+
+
+  // console.log(`sync done, ${this.pools.length} pools in list`);
+  // }
 
   /* eslint-disable class-methods-use-this */
   /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -615,20 +764,43 @@ export default class Context {
 
   // flags pools in the current validator set.
   // TODO: make this more robust (currently depends on assumption about the order of event handling)
-  private async updateCurrentValidators(): Promise<void> {
-    const newCurrentValidators = (await this.vsContract.methods.getValidators().call()).sort();
+  private async syncPoolsState(isNewEpoch: boolean): Promise<void> {
+    const newCurrentValidatorsUnsorted = (await this.vsContract.methods.getValidators().call());
+    const newCurrentValidators = [...newCurrentValidatorsUnsorted].sort();
+    // apply filter here ?!
+
+    const activePoolAddrs: Array<string> = await this.stContract.methods.getPools().call();
+    console.log('active Pools:', activePoolAddrs);
+    const inactivePoolAddrs: Array<string> = await this.stContract.methods.getPoolsInactive().call();
+    console.log('inactive Pools:', inactivePoolAddrs);
+    const toBeElectedPoolAddrs = await this.stContract.methods.getPoolsToBeElected().call();
+    console.log('to be elected Pools:', toBeElectedPoolAddrs);
+    const pendingValidatorAddrs = await this.vsContract.methods.getPendingValidators().call();
+    console.log('pendingMiningPools:', pendingValidatorAddrs);
+
+    console.log(`syncing ${activePoolAddrs.length} active and ${inactivePoolAddrs.length} inactive pools...`);
+    const poolAddrs = activePoolAddrs.concat(inactivePoolAddrs);
+
     // make sure both arrays were sorted beforehand
     if (this.currentValidators.toString() !== newCurrentValidators.toString()) {
       console.log(`validator set changed in block ${this.currentBlockNumber} to: ${newCurrentValidators}`);
       this.currentValidators = newCurrentValidators;
     }
 
-    // the pools are updated every time anyway, otherwise we currently can have race conditions
-    // TODO: solve this in a more elegant way
-    this.pools.forEach((p) => {
-      // console.log(`updating validator state for ${p.stakingAddress}`);
-      p.isCurrentValidator = newCurrentValidators.indexOf(p.miningAddress) >= 0;
+    // check if there is a new pool that is not tracked yet within the context.
+    poolAddrs.forEach((poolAddress) => {
+      const findResult = this.pools.find((x) => x.stakingAddress === poolAddress);
+      if (!findResult) {
+        this.pools.push(this.createEmptyPool(poolAddress));
+      }
     });
+
+    this.pools.forEach(async (p) => {
+      await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs,
+        pendingValidatorAddrs, isNewEpoch);
+    });
+
+    this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
   }
 
   private async getValidatorStakeShare(miningAddr: Address): Promise<number> {
@@ -642,6 +814,9 @@ export default class Context {
   }
 
   private async getClaimableReward(stakingAddr: Address): Promise<Amount> {
+    if (!this.hasWeb3BrowserSupport) {
+      return '0';
+    }
     // getRewardAmount() fails if invoked for a staker without stake in the pool, thus we check that beforehand
     const hasStake: boolean = stakingAddr === this.myAddr ? true : (await this.stContract.methods.stakeFirstEpoch(stakingAddr, this.myAddr).call()) !== '0';
     return hasStake ? this.stContract.methods.getRewardAmount([], stakingAddr, this.myAddr).call() : '0';
@@ -652,7 +827,10 @@ export default class Context {
     await this.pools.forEach(async (pool) => {
       pool.validatorStakeShare = await this.getValidatorStakeShare(pool.miningAddress);
       pool.validatorRewardShare = await this.getValidatorRewardShare(pool.stakingAddress);
-      pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
+
+      pool.banCount = await this.getBanCount(pool.stakingAddress);
+      pool.bannedUntil = await this.getBannedUntil(pool.miningAddress);
+      pool.myStake = await this.getMyStake(pool.stakingAddress);
     });
   }
 
@@ -665,18 +843,17 @@ export default class Context {
   private async handleNewBlock(web3Instance: Web3, blockHeader: BlockHeader): Promise<void> {
     this.currentBlockNumber = blockHeader.number;
     this.currentTimestamp = new BN(blockHeader.timestamp);
-    this.myBalance = await web3Instance.eth.getBalance(this.myAddr);
+
+    if (this.hasWeb3BrowserSupport) {
+      this.myBalance = await web3Instance.eth.getBalance(this.myAddr);
+    }
 
     // epoch change
-    if (this.currentTimestamp.gt(new BN(this.stakingEpochEndTime))) {
-      console.log(`updating stakingEpochEndBlock at block ${this.currentBlockNumber}`);
+    console.log(`updating stakingEpochEndBlock at block ${this.currentBlockNumber}`);
+    const oldEpoch = this.stakingEpoch;
+    await this.retrieveValuesFromContract();
 
-      const oldEpoch = this.stakingEpoch;
-      await this.retrieveValuesFromContract();
-      if (oldEpoch !== this.stakingEpoch) {
-        await this.handleNewEpoch();
-      }
-    }
+    const isNewEpoch = oldEpoch !== this.stakingEpoch;
 
     // TODO FIX: blocks left in Epoch can't get told.
     // const blocksLeftInEpoch = this.stakingEpochEndBlock - this.currentBlockNumber;
@@ -693,7 +870,9 @@ export default class Context {
     this.canStakeOrWithdrawNow = await this.stContract.methods.areStakeAndWithdrawAllowed().call();
 
     // TODO: don't do this in every block. There's no event we can rely on, but we can be smarter than this
-    await this.updateCurrentValidators();
+    // await this.updateCurrentValidators();
+
+    await this.syncPoolsState(isNewEpoch);
   }
 
   private handledStEvents = new Set<number>();
@@ -708,34 +887,5 @@ export default class Context {
       }
       await this.handleNewBlock(web3Instance, blockHeader);
     });
-
-    this.stContract.events.allEvents({}, async (error, event) => {
-      if (error) {
-        console.log(`event error: ${error}`);
-      } else if (this.handledStEvents.has(event.blockNumber)) {
-        console.log(`staking contract event for block ${event.blockNumber} already handled, ignoring`);
-      } else {
-        this.handledStEvents.add(event.blockNumber);
-        console.log(`staking contract event ${event.event} originating from ${event.address} at block ${event.blockNumber}`);
-        if (event.event !== 'ClaimedReward') {
-          this.isSyncingPools = true;
-          await this.syncPoolsState();
-          this.isSyncingPools = false;
-        }
-      }
-    });
-
-    // TODO FIX: What's that ?
-    // listen to InitiateChange events. Those signal Parity to switch validator set.
-    // for logging purposes only at the moment
-    // re-read pools on any contract event
-    // this.vsContract.events.InitiateChange({}, async (error, event) => {
-    //   if (error) {
-    //     console.log(`event error: ${error}`);
-    //   } else {
-    //     console.log(`validatorset contract event ${event.event} at block ${event.blockNumber}`);
-    //     // TODO: if any handler is added here, make sure it's not triggered more than once per block
-    //   }
-    // });
   }
 }

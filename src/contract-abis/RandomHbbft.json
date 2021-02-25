@@ -43,14 +43,14 @@
     "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/RandomHbbft.sol",
     "exportedSymbols": {
       "RandomHbbft": [
-        819
+        837
       ]
     },
-    "id": 820,
+    "id": 838,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 786,
+        "id": 804,
         "literals": [
           "solidity",
           "^",
@@ -63,10 +63,10 @@
       {
         "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/interfaces/IRandomHbbft.sol",
         "file": "./interfaces/IRandomHbbft.sol",
-        "id": 787,
+        "id": 805,
         "nodeType": "ImportDirective",
-        "scope": 820,
-        "sourceUnit": 8888,
+        "scope": 838,
+        "sourceUnit": 8928,
         "src": "26:39:5",
         "symbolAliases": [],
         "unitAlias": ""
@@ -74,10 +74,10 @@
       {
         "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/upgradeability/UpgradeabilityAdmin.sol",
         "file": "./upgradeability/UpgradeabilityAdmin.sol",
-        "id": 788,
+        "id": 806,
         "nodeType": "ImportDirective",
-        "scope": 820,
-        "sourceUnit": 9684,
+        "scope": 838,
+        "sourceUnit": 9733,
         "src": "66:50:5",
         "symbolAliases": [],
         "unitAlias": ""
@@ -88,17 +88,17 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 789,
+              "id": 807,
               "name": "UpgradeabilityAdmin",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 9683,
+              "referencedDeclaration": 9732,
               "src": "283:19:5",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_UpgradeabilityAdmin_$9683",
+                "typeIdentifier": "t_contract$_UpgradeabilityAdmin_$9732",
                 "typeString": "contract UpgradeabilityAdmin"
               }
             },
-            "id": 790,
+            "id": 808,
             "nodeType": "InheritanceSpecifier",
             "src": "283:19:5"
           },
@@ -106,43 +106,43 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 791,
+              "id": 809,
               "name": "IRandomHbbft",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 8887,
+              "referencedDeclaration": 8927,
               "src": "304:12:5",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IRandomHbbft_$8887",
+                "typeIdentifier": "t_contract$_IRandomHbbft_$8927",
                 "typeString": "contract IRandomHbbft"
               }
             },
-            "id": 792,
+            "id": 810,
             "nodeType": "InheritanceSpecifier",
             "src": "304:12:5"
           }
         ],
         "contractDependencies": [
-          8887,
-          9683
+          8927,
+          9732
         ],
         "contractKind": "contract",
         "documentation": "@dev Stores and uppdates a random seed that is used to form a new validator set by the\n `ValidatorSetHbbft.newValidatorSet` function.",
         "fullyImplemented": true,
-        "id": 819,
+        "id": 837,
         "linearizedBaseContracts": [
-          819,
-          8887,
-          9683
+          837,
+          8927,
+          9732
         ],
         "name": "RandomHbbft",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "constant": false,
-            "id": 794,
+            "id": 812,
             "name": "currentSeed",
             "nodeType": "VariableDeclaration",
-            "scope": 819,
+            "scope": 837,
             "src": "699:26:5",
             "stateVariable": true,
             "storageLocation": "default",
@@ -151,7 +151,7 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 793,
+              "id": 811,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
               "src": "699:7:5",
@@ -165,7 +165,7 @@
           },
           {
             "body": {
-              "id": 805,
+              "id": 823,
               "nodeType": "Block",
               "src": "976:123:5",
               "statements": [
@@ -179,7 +179,7 @@
                           "typeIdentifier": "t_address_payable",
                           "typeString": "address payable"
                         },
-                        "id": 800,
+                        "id": 818,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": false,
@@ -188,18 +188,18 @@
                           "argumentTypes": null,
                           "expression": {
                             "argumentTypes": null,
-                            "id": 797,
+                            "id": 815,
                             "name": "msg",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 9766,
+                            "referencedDeclaration": 9815,
                             "src": "994:3:5",
                             "typeDescriptions": {
                               "typeIdentifier": "t_magic_message",
                               "typeString": "msg"
                             }
                           },
-                          "id": 798,
+                          "id": 816,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": false,
@@ -218,7 +218,7 @@
                         "rightExpression": {
                           "argumentTypes": null,
                           "hexValue": "307866666666464646664646666666666666666666666666666646664646466666664646466646466645",
-                          "id": 799,
+                          "id": 817,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": true,
@@ -242,7 +242,7 @@
                       {
                         "argumentTypes": null,
                         "hexValue": "4d7573742062652065786563757465642062792053797374656d",
-                        "id": 801,
+                        "id": 819,
                         "isConstant": false,
                         "isLValue": false,
                         "isPure": true,
@@ -269,21 +269,21 @@
                           "typeString": "literal_string \"Must be executed by System\""
                         }
                       ],
-                      "id": 796,
+                      "id": 814,
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        9769,
-                        9770
+                        9818,
+                        9819
                       ],
-                      "referencedDeclaration": 9770,
+                      "referencedDeclaration": 9819,
                       "src": "986:7:5",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
                         "typeString": "function (bool,string memory) pure"
                       }
                     },
-                    "id": 802,
+                    "id": 820,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -297,23 +297,23 @@
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 803,
+                  "id": 821,
                   "nodeType": "ExpressionStatement",
                   "src": "986:95:5"
                 },
                 {
-                  "id": 804,
+                  "id": 822,
                   "nodeType": "PlaceholderStatement",
                   "src": "1091:1:5"
                 }
               ]
             },
             "documentation": "@dev Ensures the caller is the SYSTEM_ADDRESS. See https://wiki.parity.io/Validator-Set.html",
-            "id": 806,
+            "id": 824,
             "name": "onlySystem",
             "nodeType": "ModifierDefinition",
             "parameters": {
-              "id": 795,
+              "id": 813,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "973:2:5"
@@ -323,25 +323,25 @@
           },
           {
             "body": {
-              "id": 817,
+              "id": 835,
               "nodeType": "Block",
               "src": "1299:43:5",
               "statements": [
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 815,
+                    "id": 833,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftHandSide": {
                       "argumentTypes": null,
-                      "id": 813,
+                      "id": 831,
                       "name": "currentSeed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 794,
+                      "referencedDeclaration": 812,
                       "src": "1309:11:5",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
@@ -352,11 +352,11 @@
                     "operator": "=",
                     "rightHandSide": {
                       "argumentTypes": null,
-                      "id": 814,
+                      "id": 832,
                       "name": "_currentSeed",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 808,
+                      "referencedDeclaration": 826,
                       "src": "1323:12:5",
                       "typeDescriptions": {
                         "typeIdentifier": "t_uint256",
@@ -369,27 +369,27 @@
                       "typeString": "uint256"
                     }
                   },
-                  "id": 816,
+                  "id": 834,
                   "nodeType": "ExpressionStatement",
                   "src": "1309:26:5"
                 }
               ]
             },
             "documentation": null,
-            "id": 818,
+            "id": 836,
             "implemented": true,
             "kind": "function",
             "modifiers": [
               {
                 "arguments": null,
-                "id": 811,
+                "id": 829,
                 "modifierName": {
                   "argumentTypes": null,
-                  "id": 810,
+                  "id": 828,
                   "name": "onlySystem",
                   "nodeType": "Identifier",
                   "overloadedDeclarations": [],
-                  "referencedDeclaration": 806,
+                  "referencedDeclaration": 824,
                   "src": "1288:10:5",
                   "typeDescriptions": {
                     "typeIdentifier": "t_modifier$__$",
@@ -403,15 +403,15 @@
             "name": "setCurrentSeed",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 809,
+              "id": 827,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 808,
+                  "id": 826,
                   "name": "_currentSeed",
                   "nodeType": "VariableDeclaration",
-                  "scope": 818,
+                  "scope": 836,
                   "src": "1249:20:5",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -420,7 +420,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 807,
+                    "id": 825,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "1249:7:5",
@@ -436,437 +436,486 @@
               "src": "1248:22:5"
             },
             "returnParameters": {
-              "id": 812,
+              "id": 830,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "1299:0:5"
             },
-            "scope": 819,
+            "scope": 837,
             "src": "1225:117:5",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "external"
           }
         ],
-        "scope": 820,
+        "scope": 838,
         "src": "259:1085:5"
       }
     ],
     "src": "0:1344:5"
   },
   "legacyAST": {
-    "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/RandomHbbft.sol",
-    "exportedSymbols": {
-      "RandomHbbft": [
-        819
-      ]
+    "attributes": {
+      "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/RandomHbbft.sol",
+      "exportedSymbols": {
+        "RandomHbbft": [
+          837
+        ]
+      }
     },
-    "id": 820,
-    "nodeType": "SourceUnit",
-    "nodes": [
+    "children": [
       {
-        "id": 786,
-        "literals": [
-          "solidity",
-          "^",
-          "0.5",
-          ".16"
-        ],
-        "nodeType": "PragmaDirective",
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.5",
+            ".16"
+          ]
+        },
+        "id": 804,
+        "name": "PragmaDirective",
         "src": "0:24:5"
       },
       {
-        "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/interfaces/IRandomHbbft.sol",
-        "file": "./interfaces/IRandomHbbft.sol",
-        "id": 787,
-        "nodeType": "ImportDirective",
-        "scope": 820,
-        "sourceUnit": 8888,
-        "src": "26:39:5",
-        "symbolAliases": [],
-        "unitAlias": ""
+        "attributes": {
+          "SourceUnit": 8928,
+          "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/interfaces/IRandomHbbft.sol",
+          "file": "./interfaces/IRandomHbbft.sol",
+          "scope": 838,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 805,
+        "name": "ImportDirective",
+        "src": "26:39:5"
       },
       {
-        "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/upgradeability/UpgradeabilityAdmin.sol",
-        "file": "./upgradeability/UpgradeabilityAdmin.sol",
-        "id": 788,
-        "nodeType": "ImportDirective",
-        "scope": 820,
-        "sourceUnit": 9684,
-        "src": "66:50:5",
-        "symbolAliases": [],
-        "unitAlias": ""
+        "attributes": {
+          "SourceUnit": 9733,
+          "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/upgradeability/UpgradeabilityAdmin.sol",
+          "file": "./upgradeability/UpgradeabilityAdmin.sol",
+          "scope": 838,
+          "symbolAliases": [
+            null
+          ],
+          "unitAlias": ""
+        },
+        "id": 806,
+        "name": "ImportDirective",
+        "src": "66:50:5"
       },
       {
-        "baseContracts": [
+        "attributes": {
+          "contractDependencies": [
+            8927,
+            9732
+          ],
+          "contractKind": "contract",
+          "documentation": "@dev Stores and uppdates a random seed that is used to form a new validator set by the\n `ValidatorSetHbbft.newValidatorSet` function.",
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            837,
+            8927,
+            9732
+          ],
+          "name": "RandomHbbft",
+          "scope": 838
+        },
+        "children": [
           {
-            "arguments": null,
-            "baseName": {
-              "contractScope": null,
-              "id": 789,
-              "name": "UpgradeabilityAdmin",
-              "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 9683,
-              "src": "283:19:5",
-              "typeDescriptions": {
-                "typeIdentifier": "t_contract$_UpgradeabilityAdmin_$9683",
-                "typeString": "contract UpgradeabilityAdmin"
-              }
+            "attributes": {
+              "arguments": null
             },
-            "id": 790,
-            "nodeType": "InheritanceSpecifier",
+            "children": [
+              {
+                "attributes": {
+                  "contractScope": null,
+                  "name": "UpgradeabilityAdmin",
+                  "referencedDeclaration": 9732,
+                  "type": "contract UpgradeabilityAdmin"
+                },
+                "id": 807,
+                "name": "UserDefinedTypeName",
+                "src": "283:19:5"
+              }
+            ],
+            "id": 808,
+            "name": "InheritanceSpecifier",
             "src": "283:19:5"
           },
           {
-            "arguments": null,
-            "baseName": {
-              "contractScope": null,
-              "id": 791,
-              "name": "IRandomHbbft",
-              "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 8887,
-              "src": "304:12:5",
-              "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IRandomHbbft_$8887",
-                "typeString": "contract IRandomHbbft"
-              }
+            "attributes": {
+              "arguments": null
             },
-            "id": 792,
-            "nodeType": "InheritanceSpecifier",
+            "children": [
+              {
+                "attributes": {
+                  "contractScope": null,
+                  "name": "IRandomHbbft",
+                  "referencedDeclaration": 8927,
+                  "type": "contract IRandomHbbft"
+                },
+                "id": 809,
+                "name": "UserDefinedTypeName",
+                "src": "304:12:5"
+              }
+            ],
+            "id": 810,
+            "name": "InheritanceSpecifier",
             "src": "304:12:5"
-          }
-        ],
-        "contractDependencies": [
-          8887,
-          9683
-        ],
-        "contractKind": "contract",
-        "documentation": "@dev Stores and uppdates a random seed that is used to form a new validator set by the\n `ValidatorSetHbbft.newValidatorSet` function.",
-        "fullyImplemented": true,
-        "id": 819,
-        "linearizedBaseContracts": [
-          819,
-          8887,
-          9683
-        ],
-        "name": "RandomHbbft",
-        "nodeType": "ContractDefinition",
-        "nodes": [
-          {
-            "constant": false,
-            "id": 794,
-            "name": "currentSeed",
-            "nodeType": "VariableDeclaration",
-            "scope": 819,
-            "src": "699:26:5",
-            "stateVariable": true,
-            "storageLocation": "default",
-            "typeDescriptions": {
-              "typeIdentifier": "t_uint256",
-              "typeString": "uint256"
-            },
-            "typeName": {
-              "id": 793,
-              "name": "uint256",
-              "nodeType": "ElementaryTypeName",
-              "src": "699:7:5",
-              "typeDescriptions": {
-                "typeIdentifier": "t_uint256",
-                "typeString": "uint256"
-              }
-            },
-            "value": null,
-            "visibility": "public"
           },
           {
-            "body": {
-              "id": 805,
-              "nodeType": "Block",
-              "src": "976:123:5",
-              "statements": [
-                {
-                  "expression": {
-                    "argumentTypes": null,
-                    "arguments": [
+            "attributes": {
+              "constant": false,
+              "name": "currentSeed",
+              "scope": 837,
+              "stateVariable": true,
+              "storageLocation": "default",
+              "type": "uint256",
+              "value": null,
+              "visibility": "public"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "name": "uint256",
+                  "type": "uint256"
+                },
+                "id": 811,
+                "name": "ElementaryTypeName",
+                "src": "699:7:5"
+              }
+            ],
+            "id": 812,
+            "name": "VariableDeclaration",
+            "src": "699:26:5"
+          },
+          {
+            "attributes": {
+              "documentation": "@dev Ensures the caller is the SYSTEM_ADDRESS. See https://wiki.parity.io/Validator-Set.html",
+              "name": "onlySystem",
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 813,
+                "name": "ParameterList",
+                "src": "973:2:5"
+              },
+              {
+                "children": [
+                  {
+                    "children": [
                       {
-                        "argumentTypes": null,
-                        "commonType": {
-                          "typeIdentifier": "t_address_payable",
-                          "typeString": "address payable"
-                        },
-                        "id": 800,
-                        "isConstant": false,
-                        "isLValue": false,
-                        "isPure": false,
-                        "lValueRequested": false,
-                        "leftExpression": {
+                        "attributes": {
                           "argumentTypes": null,
-                          "expression": {
-                            "argumentTypes": null,
-                            "id": 797,
-                            "name": "msg",
-                            "nodeType": "Identifier",
-                            "overloadedDeclarations": [],
-                            "referencedDeclaration": 9766,
-                            "src": "994:3:5",
-                            "typeDescriptions": {
-                              "typeIdentifier": "t_magic_message",
-                              "typeString": "msg"
-                            }
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "isStructConstructorCall": false,
+                          "lValueRequested": false,
+                          "names": [
+                            null
+                          ],
+                          "type": "tuple()",
+                          "type_conversion": false
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": [
+                                {
+                                  "typeIdentifier": "t_bool",
+                                  "typeString": "bool"
+                                },
+                                {
+                                  "typeIdentifier": "t_stringliteral_35c4871d0df407cae0d288f06d996f30d7f5c2c2a45b9b2462e95a54bd46f378",
+                                  "typeString": "literal_string \"Must be executed by System\""
+                                }
+                              ],
+                              "overloadedDeclarations": [
+                                9818,
+                                9819
+                              ],
+                              "referencedDeclaration": 9819,
+                              "type": "function (bool,string memory) pure",
+                              "value": "require"
+                            },
+                            "id": 814,
+                            "name": "Identifier",
+                            "src": "986:7:5"
                           },
-                          "id": 798,
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "commonType": {
+                                "typeIdentifier": "t_address_payable",
+                                "typeString": "address payable"
+                              },
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": false,
+                              "lValueRequested": false,
+                              "operator": "==",
+                              "type": "bool"
+                            },
+                            "children": [
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": false,
+                                  "lValueRequested": false,
+                                  "member_name": "sender",
+                                  "referencedDeclaration": null,
+                                  "type": "address payable"
+                                },
+                                "children": [
+                                  {
+                                    "attributes": {
+                                      "argumentTypes": null,
+                                      "overloadedDeclarations": [
+                                        null
+                                      ],
+                                      "referencedDeclaration": 9815,
+                                      "type": "msg",
+                                      "value": "msg"
+                                    },
+                                    "id": 815,
+                                    "name": "Identifier",
+                                    "src": "994:3:5"
+                                  }
+                                ],
+                                "id": 816,
+                                "name": "MemberAccess",
+                                "src": "994:10:5"
+                              },
+                              {
+                                "attributes": {
+                                  "argumentTypes": null,
+                                  "hexvalue": "307866666666464646664646666666666666666666666666666646664646466666664646466646466645",
+                                  "isConstant": false,
+                                  "isLValue": false,
+                                  "isPure": true,
+                                  "lValueRequested": false,
+                                  "subdenomination": null,
+                                  "token": "number",
+                                  "type": "address payable",
+                                  "value": "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE"
+                                },
+                                "id": 817,
+                                "name": "Literal",
+                                "src": "1008:42:5"
+                              }
+                            ],
+                            "id": 818,
+                            "name": "BinaryOperation",
+                            "src": "994:56:5"
+                          },
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "hexvalue": "4d7573742062652065786563757465642062792053797374656d",
+                              "isConstant": false,
+                              "isLValue": false,
+                              "isPure": true,
+                              "lValueRequested": false,
+                              "subdenomination": null,
+                              "token": "string",
+                              "type": "literal_string \"Must be executed by System\"",
+                              "value": "Must be executed by System"
+                            },
+                            "id": 819,
+                            "name": "Literal",
+                            "src": "1052:28:5"
+                          }
+                        ],
+                        "id": 820,
+                        "name": "FunctionCall",
+                        "src": "986:95:5"
+                      }
+                    ],
+                    "id": 821,
+                    "name": "ExpressionStatement",
+                    "src": "986:95:5"
+                  },
+                  {
+                    "id": 822,
+                    "name": "PlaceholderStatement",
+                    "src": "1091:1:5"
+                  }
+                ],
+                "id": 823,
+                "name": "Block",
+                "src": "976:123:5"
+              }
+            ],
+            "id": 824,
+            "name": "ModifierDefinition",
+            "src": "954:145:5"
+          },
+          {
+            "attributes": {
+              "documentation": null,
+              "implemented": true,
+              "isConstructor": false,
+              "kind": "function",
+              "name": "setCurrentSeed",
+              "scope": 837,
+              "stateMutability": "nonpayable",
+              "superFunction": null,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "name": "_currentSeed",
+                      "scope": 836,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "value": null,
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 825,
+                        "name": "ElementaryTypeName",
+                        "src": "1249:7:5"
+                      }
+                    ],
+                    "id": 826,
+                    "name": "VariableDeclaration",
+                    "src": "1249:20:5"
+                  }
+                ],
+                "id": 827,
+                "name": "ParameterList",
+                "src": "1248:22:5"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 830,
+                "name": "ParameterList",
+                "src": "1299:0:5"
+              },
+              {
+                "attributes": {
+                  "arguments": null
+                },
+                "children": [
+                  {
+                    "attributes": {
+                      "argumentTypes": null,
+                      "overloadedDeclarations": [
+                        null
+                      ],
+                      "referencedDeclaration": 824,
+                      "type": "modifier ()",
+                      "value": "onlySystem"
+                    },
+                    "id": 828,
+                    "name": "Identifier",
+                    "src": "1288:10:5"
+                  }
+                ],
+                "id": 829,
+                "name": "ModifierInvocation",
+                "src": "1288:10:5"
+              },
+              {
+                "children": [
+                  {
+                    "children": [
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
                           "isConstant": false,
                           "isLValue": false,
                           "isPure": false,
                           "lValueRequested": false,
-                          "memberName": "sender",
-                          "nodeType": "MemberAccess",
-                          "referencedDeclaration": null,
-                          "src": "994:10:5",
-                          "typeDescriptions": {
-                            "typeIdentifier": "t_address_payable",
-                            "typeString": "address payable"
-                          }
+                          "operator": "=",
+                          "type": "uint256"
                         },
-                        "nodeType": "BinaryOperation",
-                        "operator": "==",
-                        "rightExpression": {
-                          "argumentTypes": null,
-                          "hexValue": "307866666666464646664646666666666666666666666666666646664646466666664646466646466645",
-                          "id": 799,
-                          "isConstant": false,
-                          "isLValue": false,
-                          "isPure": true,
-                          "kind": "number",
-                          "lValueRequested": false,
-                          "nodeType": "Literal",
-                          "src": "1008:42:5",
-                          "subdenomination": null,
-                          "typeDescriptions": {
-                            "typeIdentifier": "t_address_payable",
-                            "typeString": "address payable"
+                        "children": [
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 812,
+                              "type": "uint256",
+                              "value": "currentSeed"
+                            },
+                            "id": 831,
+                            "name": "Identifier",
+                            "src": "1309:11:5"
                           },
-                          "value": "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE"
-                        },
-                        "src": "994:56:5",
-                        "typeDescriptions": {
-                          "typeIdentifier": "t_bool",
-                          "typeString": "bool"
-                        }
-                      },
-                      {
-                        "argumentTypes": null,
-                        "hexValue": "4d7573742062652065786563757465642062792053797374656d",
-                        "id": 801,
-                        "isConstant": false,
-                        "isLValue": false,
-                        "isPure": true,
-                        "kind": "string",
-                        "lValueRequested": false,
-                        "nodeType": "Literal",
-                        "src": "1052:28:5",
-                        "subdenomination": null,
-                        "typeDescriptions": {
-                          "typeIdentifier": "t_stringliteral_35c4871d0df407cae0d288f06d996f30d7f5c2c2a45b9b2462e95a54bd46f378",
-                          "typeString": "literal_string \"Must be executed by System\""
-                        },
-                        "value": "Must be executed by System"
+                          {
+                            "attributes": {
+                              "argumentTypes": null,
+                              "overloadedDeclarations": [
+                                null
+                              ],
+                              "referencedDeclaration": 826,
+                              "type": "uint256",
+                              "value": "_currentSeed"
+                            },
+                            "id": 832,
+                            "name": "Identifier",
+                            "src": "1323:12:5"
+                          }
+                        ],
+                        "id": 833,
+                        "name": "Assignment",
+                        "src": "1309:26:5"
                       }
                     ],
-                    "expression": {
-                      "argumentTypes": [
-                        {
-                          "typeIdentifier": "t_bool",
-                          "typeString": "bool"
-                        },
-                        {
-                          "typeIdentifier": "t_stringliteral_35c4871d0df407cae0d288f06d996f30d7f5c2c2a45b9b2462e95a54bd46f378",
-                          "typeString": "literal_string \"Must be executed by System\""
-                        }
-                      ],
-                      "id": 796,
-                      "name": "require",
-                      "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        9769,
-                        9770
-                      ],
-                      "referencedDeclaration": 9770,
-                      "src": "986:7:5",
-                      "typeDescriptions": {
-                        "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
-                        "typeString": "function (bool,string memory) pure"
-                      }
-                    },
-                    "id": 802,
-                    "isConstant": false,
-                    "isLValue": false,
-                    "isPure": false,
-                    "kind": "functionCall",
-                    "lValueRequested": false,
-                    "names": [],
-                    "nodeType": "FunctionCall",
-                    "src": "986:95:5",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_tuple$__$",
-                      "typeString": "tuple()"
-                    }
-                  },
-                  "id": 803,
-                  "nodeType": "ExpressionStatement",
-                  "src": "986:95:5"
-                },
-                {
-                  "id": 804,
-                  "nodeType": "PlaceholderStatement",
-                  "src": "1091:1:5"
-                }
-              ]
-            },
-            "documentation": "@dev Ensures the caller is the SYSTEM_ADDRESS. See https://wiki.parity.io/Validator-Set.html",
-            "id": 806,
-            "name": "onlySystem",
-            "nodeType": "ModifierDefinition",
-            "parameters": {
-              "id": 795,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "973:2:5"
-            },
-            "src": "954:145:5",
-            "visibility": "internal"
-          },
-          {
-            "body": {
-              "id": 817,
-              "nodeType": "Block",
-              "src": "1299:43:5",
-              "statements": [
-                {
-                  "expression": {
-                    "argumentTypes": null,
-                    "id": 815,
-                    "isConstant": false,
-                    "isLValue": false,
-                    "isPure": false,
-                    "lValueRequested": false,
-                    "leftHandSide": {
-                      "argumentTypes": null,
-                      "id": 813,
-                      "name": "currentSeed",
-                      "nodeType": "Identifier",
-                      "overloadedDeclarations": [],
-                      "referencedDeclaration": 794,
-                      "src": "1309:11:5",
-                      "typeDescriptions": {
-                        "typeIdentifier": "t_uint256",
-                        "typeString": "uint256"
-                      }
-                    },
-                    "nodeType": "Assignment",
-                    "operator": "=",
-                    "rightHandSide": {
-                      "argumentTypes": null,
-                      "id": 814,
-                      "name": "_currentSeed",
-                      "nodeType": "Identifier",
-                      "overloadedDeclarations": [],
-                      "referencedDeclaration": 808,
-                      "src": "1323:12:5",
-                      "typeDescriptions": {
-                        "typeIdentifier": "t_uint256",
-                        "typeString": "uint256"
-                      }
-                    },
-                    "src": "1309:26:5",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_uint256",
-                      "typeString": "uint256"
-                    }
-                  },
-                  "id": 816,
-                  "nodeType": "ExpressionStatement",
-                  "src": "1309:26:5"
-                }
-              ]
-            },
-            "documentation": null,
-            "id": 818,
-            "implemented": true,
-            "kind": "function",
-            "modifiers": [
-              {
-                "arguments": null,
-                "id": 811,
-                "modifierName": {
-                  "argumentTypes": null,
-                  "id": 810,
-                  "name": "onlySystem",
-                  "nodeType": "Identifier",
-                  "overloadedDeclarations": [],
-                  "referencedDeclaration": 806,
-                  "src": "1288:10:5",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_modifier$__$",
-                    "typeString": "modifier ()"
+                    "id": 834,
+                    "name": "ExpressionStatement",
+                    "src": "1309:26:5"
                   }
-                },
-                "nodeType": "ModifierInvocation",
-                "src": "1288:10:5"
+                ],
+                "id": 835,
+                "name": "Block",
+                "src": "1299:43:5"
               }
             ],
-            "name": "setCurrentSeed",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 809,
-              "nodeType": "ParameterList",
-              "parameters": [
-                {
-                  "constant": false,
-                  "id": 808,
-                  "name": "_currentSeed",
-                  "nodeType": "VariableDeclaration",
-                  "scope": 818,
-                  "src": "1249:20:5",
-                  "stateVariable": false,
-                  "storageLocation": "default",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_uint256",
-                    "typeString": "uint256"
-                  },
-                  "typeName": {
-                    "id": 807,
-                    "name": "uint256",
-                    "nodeType": "ElementaryTypeName",
-                    "src": "1249:7:5",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_uint256",
-                      "typeString": "uint256"
-                    }
-                  },
-                  "value": null,
-                  "visibility": "internal"
-                }
-              ],
-              "src": "1248:22:5"
-            },
-            "returnParameters": {
-              "id": 812,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "1299:0:5"
-            },
-            "scope": 819,
-            "src": "1225:117:5",
-            "stateMutability": "nonpayable",
-            "superFunction": null,
-            "visibility": "external"
+            "id": 836,
+            "name": "FunctionDefinition",
+            "src": "1225:117:5"
           }
         ],
-        "scope": 820,
+        "id": 837,
+        "name": "ContractDefinition",
         "src": "259:1085:5"
       }
     ],
+    "id": 838,
+    "name": "SourceUnit",
     "src": "0:1344:5"
   },
   "compiler": {
@@ -874,8 +923,8 @@
     "version": "0.5.16+commit.9c3226ce.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.3.1",
-  "updatedAt": "2020-11-10T08:59:05.952Z",
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2020-12-28T14:12:59.007Z",
   "devdoc": {
     "details": "Stores and uppdates a random seed that is used to form a new validator set by the `ValidatorSetHbbft.newValidatorSet` function.",
     "methods": {}

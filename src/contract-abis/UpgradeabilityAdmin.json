@@ -12,14 +12,14 @@
     "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/upgradeability/UpgradeabilityAdmin.sol",
     "exportedSymbols": {
       "UpgradeabilityAdmin": [
-        9683
+        9732
       ]
     },
-    "id": 9684,
+    "id": 9733,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 9668,
+        "id": 9717,
         "literals": [
           "solidity",
           "^",
@@ -35,19 +35,19 @@
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 9683,
+        "id": 9732,
         "linearizedBaseContracts": [
-          9683
+          9732
         ],
         "name": "UpgradeabilityAdmin",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "constant": true,
-            "id": 9671,
+            "id": 9720,
             "name": "ADMIN_SLOT",
             "nodeType": "VariableDeclaration",
-            "scope": 9683,
+            "scope": 9732,
             "src": "211:105:32",
             "stateVariable": true,
             "storageLocation": "default",
@@ -56,7 +56,7 @@
               "typeString": "bytes32"
             },
             "typeName": {
-              "id": 9669,
+              "id": 9718,
               "name": "bytes32",
               "nodeType": "ElementaryTypeName",
               "src": "211:7:32",
@@ -68,7 +68,7 @@
             "value": {
               "argumentTypes": null,
               "hexValue": "307862353331323736383461353638623331373361653133623966386136303136653234336536336236653865653131373864366137313738353062356436313033",
-              "id": 9670,
+              "id": 9719,
               "isConstant": false,
               "isLValue": false,
               "isPure": true,
@@ -87,21 +87,21 @@
           },
           {
             "body": {
-              "id": 9681,
+              "id": 9730,
               "nodeType": "Block",
               "src": "436:102:32",
               "statements": [
                 {
                   "assignments": [
-                    9677
+                    9726
                   ],
                   "declarations": [
                     {
                       "constant": false,
-                      "id": 9677,
+                      "id": 9726,
                       "name": "slot",
                       "nodeType": "VariableDeclaration",
-                      "scope": 9681,
+                      "scope": 9730,
                       "src": "446:12:32",
                       "stateVariable": false,
                       "storageLocation": "default",
@@ -110,7 +110,7 @@
                         "typeString": "bytes32"
                       },
                       "typeName": {
-                        "id": 9676,
+                        "id": 9725,
                         "name": "bytes32",
                         "nodeType": "ElementaryTypeName",
                         "src": "446:7:32",
@@ -123,14 +123,14 @@
                       "visibility": "internal"
                     }
                   ],
-                  "id": 9679,
+                  "id": 9728,
                   "initialValue": {
                     "argumentTypes": null,
-                    "id": 9678,
+                    "id": 9727,
                     "name": "ADMIN_SLOT",
                     "nodeType": "Identifier",
                     "overloadedDeclarations": [],
-                    "referencedDeclaration": 9671,
+                    "referencedDeclaration": 9720,
                     "src": "461:10:32",
                     "typeDescriptions": {
                       "typeIdentifier": "t_bytes32",
@@ -144,7 +144,7 @@
                   "externalReferences": [
                     {
                       "adm": {
-                        "declaration": 9674,
+                        "declaration": 9723,
                         "isOffset": false,
                         "isSlot": false,
                         "src": "504:3:32",
@@ -153,7 +153,7 @@
                     },
                     {
                       "slot": {
-                        "declaration": 9677,
+                        "declaration": 9726,
                         "isOffset": false,
                         "isSlot": false,
                         "src": "517:4:32",
@@ -161,7 +161,7 @@
                       }
                     }
                   ],
-                  "id": 9680,
+                  "id": 9729,
                   "nodeType": "InlineAssembly",
                   "operations": "{ adm := sload(slot) }",
                   "src": "481:51:32"
@@ -169,28 +169,28 @@
               ]
             },
             "documentation": "@return The admin slot.",
-            "id": 9682,
+            "id": 9731,
             "implemented": true,
             "kind": "function",
             "modifiers": [],
             "name": "_admin",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 9672,
+              "id": 9721,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "385:2:32"
             },
             "returnParameters": {
-              "id": 9675,
+              "id": 9724,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 9674,
+                  "id": 9723,
                   "name": "adm",
                   "nodeType": "VariableDeclaration",
-                  "scope": 9682,
+                  "scope": 9731,
                   "src": "423:11:32",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -199,7 +199,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 9673,
+                    "id": 9722,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "423:7:32",
@@ -215,237 +215,264 @@
               ],
               "src": "422:13:32"
             },
-            "scope": 9683,
+            "scope": 9732,
             "src": "370:168:32",
             "stateMutability": "view",
             "superFunction": null,
             "visibility": "internal"
           }
         ],
-        "scope": 9684,
+        "scope": 9733,
         "src": "26:773:32"
       }
     ],
     "src": "0:800:32"
   },
   "legacyAST": {
-    "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/upgradeability/UpgradeabilityAdmin.sol",
-    "exportedSymbols": {
-      "UpgradeabilityAdmin": [
-        9683
-      ]
+    "attributes": {
+      "absolutePath": "/home/sn/dmd/dmd-meta/hbbft-posdao-contracts/contracts/upgradeability/UpgradeabilityAdmin.sol",
+      "exportedSymbols": {
+        "UpgradeabilityAdmin": [
+          9732
+        ]
+      }
     },
-    "id": 9684,
-    "nodeType": "SourceUnit",
-    "nodes": [
+    "children": [
       {
-        "id": 9668,
-        "literals": [
-          "solidity",
-          "^",
-          "0.5",
-          ".0"
-        ],
-        "nodeType": "PragmaDirective",
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.5",
+            ".0"
+          ]
+        },
+        "id": 9717,
+        "name": "PragmaDirective",
         "src": "0:23:32"
       },
       {
-        "baseContracts": [],
-        "contractDependencies": [],
-        "contractKind": "contract",
-        "documentation": null,
-        "fullyImplemented": true,
-        "id": 9683,
-        "linearizedBaseContracts": [
-          9683
-        ],
-        "name": "UpgradeabilityAdmin",
-        "nodeType": "ContractDefinition",
-        "nodes": [
+        "attributes": {
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "contract",
+          "documentation": null,
+          "fullyImplemented": true,
+          "linearizedBaseContracts": [
+            9732
+          ],
+          "name": "UpgradeabilityAdmin",
+          "scope": 9733
+        },
+        "children": [
           {
-            "constant": true,
-            "id": 9671,
-            "name": "ADMIN_SLOT",
-            "nodeType": "VariableDeclaration",
-            "scope": 9683,
-            "src": "211:105:32",
-            "stateVariable": true,
-            "storageLocation": "default",
-            "typeDescriptions": {
-              "typeIdentifier": "t_bytes32",
-              "typeString": "bytes32"
+            "attributes": {
+              "constant": true,
+              "name": "ADMIN_SLOT",
+              "scope": 9732,
+              "stateVariable": true,
+              "storageLocation": "default",
+              "type": "bytes32",
+              "visibility": "internal"
             },
-            "typeName": {
-              "id": 9669,
-              "name": "bytes32",
-              "nodeType": "ElementaryTypeName",
-              "src": "211:7:32",
-              "typeDescriptions": {
-                "typeIdentifier": "t_bytes32",
-                "typeString": "bytes32"
-              }
-            },
-            "value": {
-              "argumentTypes": null,
-              "hexValue": "307862353331323736383461353638623331373361653133623966386136303136653234336536336236653865653131373864366137313738353062356436313033",
-              "id": 9670,
-              "isConstant": false,
-              "isLValue": false,
-              "isPure": true,
-              "kind": "number",
-              "lValueRequested": false,
-              "nodeType": "Literal",
-              "src": "250:66:32",
-              "subdenomination": null,
-              "typeDescriptions": {
-                "typeIdentifier": "t_rational_81955473079516046949633743016697847541294818689821282749996681496272635257091_by_1",
-                "typeString": "int_const 8195...(69 digits omitted)...7091"
+            "children": [
+              {
+                "attributes": {
+                  "name": "bytes32",
+                  "type": "bytes32"
+                },
+                "id": 9718,
+                "name": "ElementaryTypeName",
+                "src": "211:7:32"
               },
-              "value": "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
-            },
-            "visibility": "internal"
+              {
+                "attributes": {
+                  "argumentTypes": null,
+                  "hexvalue": "307862353331323736383461353638623331373361653133623966386136303136653234336536336236653865653131373864366137313738353062356436313033",
+                  "isConstant": false,
+                  "isLValue": false,
+                  "isPure": true,
+                  "lValueRequested": false,
+                  "subdenomination": null,
+                  "token": "number",
+                  "type": "int_const 8195...(69 digits omitted)...7091",
+                  "value": "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+                },
+                "id": 9719,
+                "name": "Literal",
+                "src": "250:66:32"
+              }
+            ],
+            "id": 9720,
+            "name": "VariableDeclaration",
+            "src": "211:105:32"
           },
           {
-            "body": {
-              "id": 9681,
-              "nodeType": "Block",
-              "src": "436:102:32",
-              "statements": [
-                {
-                  "assignments": [
-                    9677
-                  ],
-                  "declarations": [
-                    {
+            "attributes": {
+              "documentation": "@return The admin slot.",
+              "implemented": true,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "_admin",
+              "scope": 9732,
+              "stateMutability": "view",
+              "superFunction": null,
+              "visibility": "internal"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 9721,
+                "name": "ParameterList",
+                "src": "385:2:32"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
                       "constant": false,
-                      "id": 9677,
-                      "name": "slot",
-                      "nodeType": "VariableDeclaration",
-                      "scope": 9681,
-                      "src": "446:12:32",
+                      "name": "adm",
+                      "scope": 9731,
                       "stateVariable": false,
                       "storageLocation": "default",
-                      "typeDescriptions": {
-                        "typeIdentifier": "t_bytes32",
-                        "typeString": "bytes32"
-                      },
-                      "typeName": {
-                        "id": 9676,
-                        "name": "bytes32",
-                        "nodeType": "ElementaryTypeName",
-                        "src": "446:7:32",
-                        "typeDescriptions": {
-                          "typeIdentifier": "t_bytes32",
-                          "typeString": "bytes32"
-                        }
-                      },
+                      "type": "address",
                       "value": null,
                       "visibility": "internal"
-                    }
-                  ],
-                  "id": 9679,
-                  "initialValue": {
-                    "argumentTypes": null,
-                    "id": 9678,
-                    "name": "ADMIN_SLOT",
-                    "nodeType": "Identifier",
-                    "overloadedDeclarations": [],
-                    "referencedDeclaration": 9671,
-                    "src": "461:10:32",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_bytes32",
-                      "typeString": "bytes32"
-                    }
-                  },
-                  "nodeType": "VariableDeclarationStatement",
-                  "src": "446:25:32"
-                },
-                {
-                  "externalReferences": [
-                    {
-                      "adm": {
-                        "declaration": 9674,
-                        "isOffset": false,
-                        "isSlot": false,
-                        "src": "504:3:32",
-                        "valueSize": 1
-                      }
                     },
-                    {
-                      "slot": {
-                        "declaration": 9677,
-                        "isOffset": false,
-                        "isSlot": false,
-                        "src": "517:4:32",
-                        "valueSize": 1
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 9722,
+                        "name": "ElementaryTypeName",
+                        "src": "423:7:32"
                       }
-                    }
-                  ],
-                  "id": 9680,
-                  "nodeType": "InlineAssembly",
-                  "operations": "{ adm := sload(slot) }",
-                  "src": "481:51:32"
-                }
-              ]
-            },
-            "documentation": "@return The admin slot.",
-            "id": 9682,
-            "implemented": true,
-            "kind": "function",
-            "modifiers": [],
-            "name": "_admin",
-            "nodeType": "FunctionDefinition",
-            "parameters": {
-              "id": 9672,
-              "nodeType": "ParameterList",
-              "parameters": [],
-              "src": "385:2:32"
-            },
-            "returnParameters": {
-              "id": 9675,
-              "nodeType": "ParameterList",
-              "parameters": [
-                {
-                  "constant": false,
-                  "id": 9674,
-                  "name": "adm",
-                  "nodeType": "VariableDeclaration",
-                  "scope": 9682,
-                  "src": "423:11:32",
-                  "stateVariable": false,
-                  "storageLocation": "default",
-                  "typeDescriptions": {
-                    "typeIdentifier": "t_address",
-                    "typeString": "address"
+                    ],
+                    "id": 9723,
+                    "name": "VariableDeclaration",
+                    "src": "423:11:32"
+                  }
+                ],
+                "id": 9724,
+                "name": "ParameterList",
+                "src": "422:13:32"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "assignments": [
+                        9726
+                      ]
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "constant": false,
+                          "name": "slot",
+                          "scope": 9730,
+                          "stateVariable": false,
+                          "storageLocation": "default",
+                          "type": "bytes32",
+                          "value": null,
+                          "visibility": "internal"
+                        },
+                        "children": [
+                          {
+                            "attributes": {
+                              "name": "bytes32",
+                              "type": "bytes32"
+                            },
+                            "id": 9725,
+                            "name": "ElementaryTypeName",
+                            "src": "446:7:32"
+                          }
+                        ],
+                        "id": 9726,
+                        "name": "VariableDeclaration",
+                        "src": "446:12:32"
+                      },
+                      {
+                        "attributes": {
+                          "argumentTypes": null,
+                          "overloadedDeclarations": [
+                            null
+                          ],
+                          "referencedDeclaration": 9720,
+                          "type": "bytes32",
+                          "value": "ADMIN_SLOT"
+                        },
+                        "id": 9727,
+                        "name": "Identifier",
+                        "src": "461:10:32"
+                      }
+                    ],
+                    "id": 9728,
+                    "name": "VariableDeclarationStatement",
+                    "src": "446:25:32"
                   },
-                  "typeName": {
-                    "id": 9673,
-                    "name": "address",
-                    "nodeType": "ElementaryTypeName",
-                    "src": "423:7:32",
-                    "stateMutability": "nonpayable",
-                    "typeDescriptions": {
-                      "typeIdentifier": "t_address",
-                      "typeString": "address"
-                    }
-                  },
-                  "value": null,
-                  "visibility": "internal"
-                }
-              ],
-              "src": "422:13:32"
-            },
-            "scope": 9683,
-            "src": "370:168:32",
-            "stateMutability": "view",
-            "superFunction": null,
-            "visibility": "internal"
+                  {
+                    "attributes": {
+                      "externalReferences": [
+                        {
+                          "adm": {
+                            "declaration": 9723,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "504:3:32",
+                            "valueSize": 1
+                          }
+                        },
+                        {
+                          "slot": {
+                            "declaration": 9726,
+                            "isOffset": false,
+                            "isSlot": false,
+                            "src": "517:4:32",
+                            "valueSize": 1
+                          }
+                        }
+                      ],
+                      "operations": "{ adm := sload(slot) }"
+                    },
+                    "children": [],
+                    "id": 9729,
+                    "name": "InlineAssembly",
+                    "src": "481:51:32"
+                  }
+                ],
+                "id": 9730,
+                "name": "Block",
+                "src": "436:102:32"
+              }
+            ],
+            "id": 9731,
+            "name": "FunctionDefinition",
+            "src": "370:168:32"
           }
         ],
-        "scope": 9684,
+        "id": 9732,
+        "name": "ContractDefinition",
         "src": "26:773:32"
       }
     ],
+    "id": 9733,
+    "name": "SourceUnit",
     "src": "0:800:32"
   },
   "compiler": {
@@ -453,8 +480,8 @@
     "version": "0.5.16+commit.9c3226ce.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.3.1",
-  "updatedAt": "2020-11-10T08:59:06.076Z",
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2020-12-28T14:12:59.167Z",
   "devdoc": {
     "methods": {}
   },
