@@ -4,6 +4,7 @@ import { computed, observable } from 'mobx';
 import { BlockHeader } from 'web3-eth';
 import { AbiItem } from 'web3-utils';
 import { publicToAddress } from 'ethereumjs-util';
+import { IPool, Amount, Address } from './Pool';
 import { abi as ValidatorSetAbi } from '../contract-abis/ValidatorSetHbbft.json';
 import { abi as StakingAbi } from '../contract-abis/StakingHbbftCoins.json';
 import { abi as BlockRewardAbi } from '../contract-abis/BlockRewardHbbftCoins.json';
@@ -28,8 +29,6 @@ declare global {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let window: any;
 window.BN = BN;
-
-type Address = string;
 
 // TODO: check this instead: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call
 declare global {
@@ -57,53 +56,9 @@ String.prototype.isAddress = function (this: string) {
   return web3.utils.isAddress(this);
 };
 
-type Amount = string;
-
-interface IDelegator {
-  address: Address;
-}
-
-export interface IClaimableStake {
-  amount: Amount;
-  unlockEpoch: number;
-  canClaimNow(): boolean;
-}
-
 // TODO: be consistent about type (string vs BN vs number) and unit (ATS vs wei) for amounts
-
-// TODO: when is it worth it creating a class / dedicated file?
-export interface IPool {
-  isActive: boolean; // currently "active" pool
-  isToBeElected: boolean; // is to be elected.
-  isPendingValidator: boolean; // pending validator for the next staking epoch.
-  readonly stakingAddress: Address;
-  ensName: string;
-  miningAddress: Address;
-  addedInEpoch: number;
-  isCurrentValidator: boolean;
-  candidateStake: Amount;
-  totalStake: Amount;
-  myStake: Amount;
-  claimableStake: IClaimableStake;
-  delegators: Array<IDelegator>; // TODO: how to cast to Array<IDelegator> ?
-  isMe: boolean;
-  validatorStakeShare: number; // percent
-  validatorRewardShare: number; // percent
-  claimableReward: Amount;
-  isBanned(): boolean;
-  bannedUntil: BN;
-  banCount: number;
-  blocksAuthored: number;
-  parts: string; // if part of the treshhold key, or pending validator, this holds the PARTS
-  numberOfAcks: number; // if part of the treshhold key, or pending validator, this holds the number of ACKS
-
-  // availability
-  availableSince: BN;
-  isAvailable(): boolean;
-}
-
-
 // TODO: dry-run / estimate gas before sending actual transactions
+
 export default class Context {
   @observable public currentBlockNumber!: number;
 
@@ -142,7 +97,6 @@ export default class Context {
 
   @observable public currentValidators: Address[] = [];
 
-
   // class PotData {
   //   public governancePotAddress!: string;
 
@@ -177,6 +131,7 @@ export default class Context {
   // TODO: properly implement singleton pattern
   // eslint-disable-next-line max-len
   public static async initialize(wsUrl: URL, ensRpcUrl: URL, validatorSetContractAddress: Address): Promise<Context> {
+    console.log('initializing new context. ', wsUrl, ensRpcUrl, validatorSetContractAddress);
     const ctx = new Context();
     ctx.web3WS = new Web3(wsUrl.toString());
     ctx.web3Ens = new Web3(ensRpcUrl.toString());
@@ -499,6 +454,7 @@ export default class Context {
       // TODO: if a contract call fails, the stack trace doesn't show the actual line number.
       console.log('validatorSet Contract: ', validatorSetContractAddress);
       this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
+      console.log('queriying adress...');
       const stAddress = await this.vsContract.methods.stakingContract().call();
       console.log('stAddress: ', stAddress);
       this.stContract = new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
@@ -508,6 +464,7 @@ export default class Context {
       this.kghContract = new this.web3.eth.Contract((KeyGenHistoryAbi as AbiItem[]), kghAddress);
     } catch (e) {
       console.log(`initializing contracts failed: ${e}`);
+      console.log(e);
       throw e;
     }
 
@@ -517,7 +474,6 @@ export default class Context {
     // those values are asumed to be not changeable.
     this.epochDuration = parseInt(await this.stContract.methods.stakingFixedEpochDuration().call());
     this.stakeWithdrawDisallowPeriod = parseInt(await this.stContract.methods.stakingWithdrawDisallowPeriod().call());
-
 
     await this.retrieveValuesFromContract();
     // this.posdaoStartBlock = this.stakingEpochStartBlock - this.stakingEpoch * this.epochDuration;
@@ -547,7 +503,8 @@ export default class Context {
   }
 
   private async getAvailableSince(miningAddress: string): Promise<BN> {
-    return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
+    // return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
+    return new BN('0');
   }
 
   private async getBannedUntil(miningAddress: string): Promise<BN> {
@@ -570,9 +527,11 @@ export default class Context {
     const { stakingAddress } = pool;
     console.log(`checking pool ${stakingAddress}`);
     const ensNamePromise = this.getEnsNameOf(pool.stakingAddress);
-
+    console.log(`ens: ${stakingAddress}`);
     // TODO: figure out if this value can be cached or not.
     pool.miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
+    console.log(`minigAddress: ${pool.miningAddress}`);
+
     const { miningAddress } = pool;
 
     pool.isActive = activePoolAddrs.indexOf(stakingAddress) >= 0;
@@ -610,15 +569,15 @@ export default class Context {
       pool.claimableStake = claimableStake;
     }
 
-
     // TODO: delegatorAddrs ?!
     // pool.delegatorAddrs = Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
-
 
     pool.bannedUntil = await this.getBannedUntil(miningAddress);
     pool.banCount = await this.getBanCount(miningAddress);
 
-    pool.availableSince = await this.getAvailableSince(miningAddress);
+    console.log('before get available since: ', pool);
+    // pool.availableSince = await this.getAvailableSince(miningAddress);
+    console.log('after get available since: ', pool);
 
     // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
     // there are between 1 and n AddedPool events per pool. We're looking for the first one
@@ -661,6 +620,8 @@ export default class Context {
     ensNamePromise.then((name) => {
       pool.ensName = name;
     });
+
+    console.log('pool got updated: ', pool);
   }
 
   private createEmptyPool(stakingAddress: string): IPool {
@@ -697,7 +658,6 @@ export default class Context {
     };
     return newPool;
   }
-
 
   // (re-)builds the data structure this.pools based on the current state on chain
   // This may become overkill in a busy system. It should be possible to do more fine-grained updates instead.
@@ -736,7 +696,6 @@ export default class Context {
 
   //   pools.push(newPool);
   // }));
-
 
   // console.log(`sync done, ${this.pools.length} pools in list`);
   // }

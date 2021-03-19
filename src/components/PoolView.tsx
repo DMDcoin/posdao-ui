@@ -2,7 +2,8 @@ import React, { ReactNode } from 'react';
 import { action, computed, observable } from 'mobx';
 import { observer } from 'mobx-react';
 import BN from 'bn.js';
-import Context, { IPool } from '../model/Context';
+import Context from '../model/Context';
+import { IPool } from '../model/Pool';
 
 export interface PoolViewProps {
   context: Context;
@@ -33,14 +34,12 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
   @observable private amountStr = '';
   @observable private processing = false;
 
-
   // TODO: this isn't updated when the state of checkCanStakeOrWithdrawNow() changes
   @computed
   private get buttonsEnabled(): boolean {
     const { context } = this.props;
     return context.canStakeOrWithdrawNow && !this.processing;
   }
-
 
   // eslint-disable-next-line class-methods-use-this
   private getPoolClasses(pool: IPool): string {
@@ -62,9 +61,8 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
     return '';
   }
 
-
-    // TODO: refactor to reduce duplicate code
-    @action.bound
+  // TODO: refactor to reduce duplicate code
+  @action.bound
   private async handleWithdrawButton(): Promise<void> {
     this.processing = true;
     const { context, pool } = this.props;
@@ -87,31 +85,31 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
   }
 
   @action.bound
-    private async handleStakeButton(): Promise<void> {
-      this.processing = true;
-      const { context, pool } = this.props;
-      const stakeAmount = parseInt(this.amountStr);
-      const previousStakeAmount = pool.myStake.asNumber();
-      const minStake = pool === context.myPool ? context.candidateMinStake : context.delegatorMinStake;
-      if (Number.isNaN(stakeAmount)) {
-        alert('no amount entered');
-      } else if (stakeAmount > context.myBalance.asNumber()) {
-        alert(`insufficient balance (${context.myBalance.print()}) for selected amount ${stakeAmount}`);
-      } else if (!context.canStakeOrWithdrawNow) {
-        alert('outside staking/withdraw time window');
-      } else if (pool !== context.myPool && pool.candidateStake.asNumber() < context.candidateMinStake.asNumber()) {
+  private async handleStakeButton(): Promise<void> {
+    this.processing = true;
+    const { context, pool } = this.props;
+    const stakeAmount = parseInt(this.amountStr);
+    const previousStakeAmount = pool.myStake.asNumber();
+    const minStake = pool === context.myPool ? context.candidateMinStake : context.delegatorMinStake;
+    if (Number.isNaN(stakeAmount)) {
+      alert('no amount entered');
+    } else if (stakeAmount > context.myBalance.asNumber()) {
+      alert(`insufficient balance (${context.myBalance.print()}) for selected amount ${stakeAmount}`);
+    } else if (!context.canStakeOrWithdrawNow) {
+      alert('outside staking/withdraw time window');
+    } else if (pool !== context.myPool && pool.candidateStake.asNumber() < context.candidateMinStake.asNumber()) {
       // TODO: this condition should be checked before even enabling the button
-        alert('insufficient candidate (pool owner) stake');
-      } else if (previousStakeAmount + stakeAmount < minStake.asNumber()) {
-        alert(`min staking amount is ${minStake.print()}`);
-      } else if (pool.isBanned()) {
-        alert('cannot stake on a pool which is currently banned');
-      } else {
-        await context.stake(pool.stakingAddress, stakeAmount);
-        this.amountStr = '';
-      }
-      this.processing = false;
+      alert('insufficient candidate (pool owner) stake');
+    } else if (previousStakeAmount + stakeAmount < minStake.asNumber()) {
+      alert(`min staking amount is ${minStake.print()}`);
+    } else if (pool.isBanned()) {
+      alert('cannot stake on a pool which is currently banned');
+    } else {
+      await context.stake(pool.stakingAddress, stakeAmount);
+      this.amountStr = '';
     }
+    this.processing = false;
+  }
 
   @action.bound
   private async handleClaimRewardButton(): Promise<void> {
