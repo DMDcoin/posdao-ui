@@ -31,7 +31,12 @@ module.exports = {
   
       'import/no-extraneous-dependencies': [2, { devDependencies: ['**/test.tsx', '**/test.ts'] }],
       '@typescript-eslint/indent': [2, 2],
-      '@typescript-eslint/no-use-before-define': 0,
+
+      // todo: bugging arround with the no-use-before-define rule.
+      // how to fix? see: https://stackoverflow.com/questions/63818415/react-was-used-before-it-was-defined
+      "no-use-before-define": "off",
+      "@typescript-eslint/no-use-before-define": ["off"],
+
       // TODO: Eliminate by refining global property injection.
       '@typescript-eslint/no-non-null-assertion': 0,
 
@@ -73,6 +78,8 @@ module.exports = {
       '@typescript-eslint/explicit-function-return-type': ['warn', {
         allowExpressions: true
       }],
+
+
 
      
      
