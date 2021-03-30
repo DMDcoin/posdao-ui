@@ -14,9 +14,6 @@ import { StakingHbbftCoins } from '../contracts/StakingHbbftCoins';
 import { BlockRewardHbbftCoins } from '../contracts/BlockRewardHbbftCoins';
 import { KeyGenHistory } from '../contracts/KeyGenHistory';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-// const namehash = require('eth-ens-namehash');
-
 // needed for querying injected web3 (e.g. from Metamask)
 declare global {
   interface Window {
@@ -165,7 +162,7 @@ export default class Context {
     // window.web3 = ctx.web3;
 
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts: Account[]) => {
+      window.ethereum.on('accountsChanged', (accounts: any) => {
         alert(`metamask account changed to ${accounts}. You may want to reload...`);
       });
 
@@ -503,8 +500,7 @@ export default class Context {
   }
 
   private async getAvailableSince(miningAddress: string): Promise<BN> {
-    // return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
-    return new BN('0');
+    return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
   }
 
   private async getBannedUntil(miningAddress: string): Promise<BN> {
@@ -576,7 +572,7 @@ export default class Context {
     pool.banCount = await this.getBanCount(miningAddress);
 
     console.log('before get available since: ', pool);
-    // pool.availableSince = await this.getAvailableSince(miningAddress);
+    pool.availableSince = await this.getAvailableSince(miningAddress);
     console.log('after get available since: ', pool);
 
     // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });

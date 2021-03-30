@@ -14,7 +14,7 @@ export interface PoolViewProps {
 export default class PoolView extends React.Component<PoolViewProps, {}> {
   // static text formating functions.
 
-  private static bigNumberToTimespan(input: BN) {
+  private static bigNumberToTimespan(input: BN): string {
     const seconds = input.toNumber();
 
     if (seconds < 60) {
@@ -33,33 +33,6 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
 
   @observable private amountStr = '';
   @observable private processing = false;
-
-  // TODO: this isn't updated when the state of checkCanStakeOrWithdrawNow() changes
-  @computed
-  private get buttonsEnabled(): boolean {
-    const { context } = this.props;
-    return context.canStakeOrWithdrawNow && !this.processing;
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  private getPoolClasses(pool: IPool): string {
-    if (pool.isBanned()) {
-      return 'banned-pool';
-    }
-    if (!pool.isActive) {
-      return 'inactive-pool';
-    }
-    if (pool.isCurrentValidator) {
-      return 'current-validator';
-    }
-    if (!pool.isToBeElected) {
-      return 'not-to-be-elected';
-    }
-    if (pool.isPendingValidator) {
-      return 'is-pending-validator';
-    }
-    return '';
-  }
 
   // TODO: refactor to reduce duplicate code
   @action.bound
@@ -141,6 +114,33 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
     const inputStr = e.currentTarget.value;
     const parsed = parseInt(inputStr);
     this.amountStr = Number.isNaN(parsed) ? '' : parsed.toString();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private getPoolClasses(pool: IPool): string {
+    if (pool.isBanned()) {
+      return 'banned-pool';
+    }
+    if (!pool.isActive) {
+      return 'inactive-pool';
+    }
+    if (pool.isCurrentValidator) {
+      return 'current-validator';
+    }
+    if (!pool.isToBeElected) {
+      return 'not-to-be-elected';
+    }
+    if (pool.isPendingValidator) {
+      return 'is-pending-validator';
+    }
+    return '';
+  }
+
+  // TODO: this isn't updated when the state of checkCanStakeOrWithdrawNow() changes
+  @computed
+  private get buttonsEnabled(): boolean {
+    const { context } = this.props;
+    return context.canStakeOrWithdrawNow && !this.processing;
   }
 
   public render(): ReactNode {
