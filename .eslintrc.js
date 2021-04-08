@@ -68,6 +68,8 @@ module.exports = {
       // disabled because it complains where there's no reason for complaining
       'jsx-a11y/label-has-associated-control': 0,
 
+      //'import/no-cycle': ['error', { maxDepth: Infinity }],
+
       '@typescript-eslint/explicit-function-return-type': ['warn', {
         allowExpressions: true
       }],
