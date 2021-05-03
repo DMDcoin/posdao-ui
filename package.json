@@ -25,6 +25,7 @@
     "web3-utils": "^1.2.5"
   },
   "scripts": {
+    "postinstall": "npm run typechain",
     "start": "react-scripts start",
     "build": "npm run typechain && react-scripts build",
     "update-contract-abis": "cp ../hbbft-posdao-contracts/build/contracts/*.json ./src/contract-abis",
