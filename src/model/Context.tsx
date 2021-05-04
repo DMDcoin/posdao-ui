@@ -37,17 +37,17 @@ declare global {
 }
 
 // TODO: can this be added to the Amount type only (instead of String) without complicating usage?
-// eslint-disable-next-line no-extend-native,@typescript-eslint/explicit-function-return-type,func-names
+// eslint-disable-next-line no-extend-native,@typescript-eslint/explicit-function-return-type,func-names,@typescript-eslint/no-unused-vars
 String.prototype.print = function (this: string) {
   const nr = this.asNumber();
   return Math.trunc(nr) === nr ? nr.toString() : nr.toFixed(2);
 };
-// eslint-disable-next-line no-extend-native,@typescript-eslint/explicit-function-return-type,func-names
+// eslint-disable-next-line no-extend-native,@typescript-eslint/explicit-function-return-type,func-names,@typescript-eslint/no-unused-vars
 String.prototype.asNumber = function (this: string) {
   const web3 = new Web3();
   return parseFloat(web3.utils.fromWei(this));
 };
-// eslint-disable-next-line no-extend-native,@typescript-eslint/explicit-function-return-type,func-names
+// eslint-disable-next-line no-extend-native,@typescript-eslint/explicit-function-return-type,func-names,@typescript-eslint/no-unused-vars
 String.prototype.isAddress = function (this: string) {
   const web3 = new Web3();
   return web3.utils.isAddress(this);
@@ -162,6 +162,7 @@ export default class Context {
     // window.web3 = ctx.web3;
 
     if (window.ethereum) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       window.ethereum.on('accountsChanged', (accounts: any) => {
         alert(`metamask account changed to ${accounts}. You may want to reload...`);
       });
