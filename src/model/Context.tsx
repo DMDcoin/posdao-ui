@@ -651,6 +651,7 @@ export default class Context {
       parts: '',
       numberOfAcks: 0,
       availableSince: new BN('0'),
+      availableSinceAsText: () => (new Date(newPool.availableSince.toNumber() * 1000)).toLocaleString(),
       isAvailable: () => newPool.availableSince.gt(new BN(this.currentTimestamp)),
     };
     return newPool;
@@ -721,28 +722,33 @@ export default class Context {
   // flags pools in the current validator set.
   // TODO: make this more robust (currently depends on assumption about the order of event handling)
   private async syncPoolsState(isNewEpoch: boolean): Promise<void> {
+    const blockNumberAtBegin = this.currentBlockNumber;
     const newCurrentValidatorsUnsorted = (await this.vsContract.methods.getValidators().call());
     const newCurrentValidators = [...newCurrentValidatorsUnsorted].sort();
     // apply filter here ?!
 
+    if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     const activePoolAddrs: Array<string> = await this.stContract.methods.getPools().call();
     console.log('active Pools:', activePoolAddrs);
+    if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     const inactivePoolAddrs: Array<string> = await this.stContract.methods.getPoolsInactive().call();
     console.log('inactive Pools:', inactivePoolAddrs);
+    if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     const toBeElectedPoolAddrs = await this.stContract.methods.getPoolsToBeElected().call();
     console.log('to be elected Pools:', toBeElectedPoolAddrs);
+    if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     const pendingValidatorAddrs = await this.vsContract.methods.getPendingValidators().call();
     console.log('pendingMiningPools:', pendingValidatorAddrs);
-
+    if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     console.log(`syncing ${activePoolAddrs.length} active and ${inactivePoolAddrs.length} inactive pools...`);
     const poolAddrs = activePoolAddrs.concat(inactivePoolAddrs);
-
+    if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     // make sure both arrays were sorted beforehand
     if (this.currentValidators.toString() !== newCurrentValidators.toString()) {
       console.log(`validator set changed in block ${this.currentBlockNumber} to: ${newCurrentValidators}`);
       this.currentValidators = newCurrentValidators;
     }
-
+    if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     // check if there is a new pool that is not tracked yet within the context.
     poolAddrs.forEach((poolAddress) => {
       const findResult = this.pools.find((x) => x.stakingAddress === poolAddress);
@@ -752,6 +758,7 @@ export default class Context {
     });
 
     this.pools.forEach(async (p) => {
+      if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync in pools'); return; }
       await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs,
         pendingValidatorAddrs, isNewEpoch);
     });

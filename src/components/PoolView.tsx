@@ -154,7 +154,36 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
       return value ? '☑' : '☐';
     }
 
-    const rawInfo = `${b2s(pool.isMe)} self | ${b2s(pool.isActive)} active | ${b2s(pool.isCurrentValidator)} current | ${b2s(pool.isAvailable())} available | ${b2s(pool.isToBeElected)} to be elected | ${b2s(pool.isPendingValidator)} pending | ${b2s(pool.isBanned())} banned`;
+    // create status element
+    function cse(boolValue: boolean, text: string, toolTip: string, toolTipNegative?: string) {
+      const toolTipNegative2Use: string = toolTipNegative ?? toolTip;
+
+      return <div title={boolValue ? toolTip : toolTipNegative2Use}>{b2s(boolValue)} {text}|</div>;
+    }
+
+    // const statusStyle : CSS.Properties = {
+
+    // }
+
+    const style = { display: 'flex' };
+
+    // maybe get the information since a node was tracked as unavailable ?
+
+    // eslint-disable-next-line react/destructuring-assignment
+    const { myAddr } = this.props.context;
+
+    // ${b2s(pool.isToBeElected)} to be elected
+    const rawInfo = (
+      <div style={style}>
+        {cse(pool.isMe, 'self', `This is your pool,  connected to your address: ${myAddr}`, 'This pool does not belong to your current address.')}
+        {cse(pool.isActive, 'active', 'Is this a active pool, the owner has enough stake on it.', 'This pool is inactive')}
+        {cse(pool.isCurrentValidator, 'current', 'This pool is currently a  validator in this epoch')}
+        {cse(pool.isAvailable(), 'available', `This node is tracked as being available since ${pool.availableSinceAsText()}`, 'Node is tracked as unavailable.')}
+        {cse(pool.isToBeElected, 'to be elected', 'pool fullfills all requirements and is an electable candidate.', 'pool does not fullfill all requirements and is not able to be elected.')}
+        {cse(pool.isPendingValidator, 'pending', 'pool is a pending validator for the next epoch, if the node manages to write acks and parts.', 'pool is not a pending validator')}
+        {cse(pool.isBanned(), 'banned', 'pool has been banned', 'pool is not banned')}
+      </div>
+    );
 
     let extraInfo = `added in epoch ${pool.addedInEpoch}\n`;
     extraInfo += `blocks authored: ${pool.blocksAuthored}\n`;

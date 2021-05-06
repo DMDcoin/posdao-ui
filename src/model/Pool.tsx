@@ -32,6 +32,7 @@ export interface IPool {
 
   // availability
   availableSince: BN;
+  availableSinceAsText(): string;
   isAvailable(): boolean;
 }
 
