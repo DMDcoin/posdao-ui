@@ -68,6 +68,10 @@ class App extends React.Component<AppProps, {}> {
       <PoolView context={context} pool={pool} key={pool.stakingAddress} />
     ));
 
+    const validatorsWithoutPoolSection = context.currentValidatorsWithoutPools.map((address) => (
+      <div className="text-danger" title="Validators can loose their pool association when the first validators after chain launch fail to take over control. (missed out key generation ?)">Validator without a Pool Association: {address}</div>
+    ));
+
     // TODO: css template/framework / convention to have a decent layout without writing CSS
     return (
       <div className="App">
@@ -76,7 +80,8 @@ class App extends React.Component<AppProps, {}> {
             account: <span className="text-primary">{context.myAddr}</span> |
             balance: {context.myBalance.print()} {context.coinSymbol}<br />
             current block nr: {context.currentBlockNumber} | current epoch: {context.stakingEpoch} | epoch start Block {context.epochStartBlock} |
-            <span className={`${this.isStakingAllowed ? 'text-success' : 'text-danger'}`}> staking {this.stakingAllowedState}: {context.stakingAllowedTimeframe} blocks</span>
+            {/* <span className={`${this.isStakingAllowed ? 'text-success' : 'text-danger'}`}> staking {this.stakingAllowedState}: {context.stakingAllowedTimeframe} blocks</span> */}
+            {validatorsWithoutPoolSection}
           </p>
         </header>
         <div id="poolList">
