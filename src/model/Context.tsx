@@ -94,6 +94,12 @@ export default class Context {
 
   @observable public currentValidators: Address[] = [];
 
+  // list of validators, where no pool is available.
+  // this can happen, in situations, 
+  // where the first node(s) should take over ownership of the 
+  // network, but they can't.
+  @observable public currentValidatorsWithoutPools: Address[] = [];
+
   // class PotData {
   //   public governancePotAddress!: string;
 
@@ -727,6 +733,8 @@ export default class Context {
     const newCurrentValidators = [...newCurrentValidatorsUnsorted].sort();
     // apply filter here ?!
 
+    const validatorWithoutPool: Array<string | undefined> = newCurrentValidators;
+
     if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     const activePoolAddrs: Array<string> = await this.stContract.methods.getPools().call();
     console.log('active Pools:', activePoolAddrs);
@@ -749,19 +757,33 @@ export default class Context {
       this.currentValidators = newCurrentValidators;
     }
     if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
+
     // check if there is a new pool that is not tracked yet within the context.
     poolAddrs.forEach((poolAddress) => {
       const findResult = this.pools.find((x) => x.stakingAddress === poolAddress);
       if (!findResult) {
         this.pools.push(this.createEmptyPool(poolAddress));
       }
+
+    });
+
+    //find current validators that are not listed as active pools.
+    this.currentValidators.forEach((validator) => {
+      
     });
 
     this.pools.forEach(async (p) => {
       if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync in pools'); return; }
       await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs,
         pendingValidatorAddrs, isNewEpoch);
+
+      const ixValidatorWithoutPool = validatorWithoutPool.indexOf(p.miningAddress);
+      if (ixValidatorWithoutPool !== -1) {
+        validatorWithoutPool[ixValidatorWithoutPool] = undefined;
+      } 
     });
+
+    this.currentValidatorsWithoutPools = validatorWithoutPool.filter(x=>x).map(x=> x!);
 
     this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
   }
@@ -839,6 +861,7 @@ export default class Context {
   }
 
   private handledStEvents = new Set<number>();
+
   // listens for events we're interested in and triggers actions accordingly
   // TODO: does the mix of 2 web3 instances as event source cause troubles?
   private async subscribeToEvents(web3Instance: Web3): Promise<void> {
