@@ -81,6 +81,10 @@ export default class Context {
 
   @observable public epochStartBlock!: number;
 
+  @observable public deltaPot!: Amount;
+
+  @observable public reinsertPot!: Amount;
+
   // TODO: find better name
   @observable public canStakeOrWithdrawNow = false;
 
@@ -95,8 +99,8 @@ export default class Context {
   @observable public currentValidators: Address[] = [];
 
   // list of validators, where no pool is available.
-  // this can happen, in situations, 
-  // where the first node(s) should take over ownership of the 
+  // this can happen, in situations,
+  // where the first node(s) should take over ownership of the
   // network, but they can't.
   @observable public currentValidatorsWithoutPools: Address[] = [];
 
@@ -491,6 +495,14 @@ export default class Context {
       this.epochStartBlock = parseInt(await this.stContract.methods.stakingEpochStartBlock().call());
       this.stakingEpochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
 
+      const deltaPotValue = await this.brContract.methods.deltaPot().call();
+      console.log('got delta pot value: ', deltaPotValue);
+      this.deltaPot = this.web3.utils.fromWei(deltaPotValue, 'ether');
+
+      const reinsertPotValue = await this.brContract.methods.reinsertPot().call();
+      console.log('got reinsert pot value: ', reinsertPotValue);
+      this.reinsertPot = this.web3.utils.fromWei(reinsertPotValue, 'ether');
+
       // could be calculated instead of called from smart contract?!
       this.stakingEpochEndTime = parseInt(await this.stContract.methods.stakingFixedEpochEndTime().call());
     }
@@ -559,9 +571,9 @@ export default class Context {
         canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
       };
       pool.claimableStake = claimableStake;
-      if (isNewEpoch) {
-        pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
-      }
+      // if (isNewEpoch) {
+      pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
+      // }
     } else {
       const claimableStake = {
         amount: '0',
@@ -764,12 +776,6 @@ export default class Context {
       if (!findResult) {
         this.pools.push(this.createEmptyPool(poolAddress));
       }
-
-    });
-
-    //find current validators that are not listed as active pools.
-    this.currentValidators.forEach((validator) => {
-      
     });
 
     this.pools.forEach(async (p) => {
@@ -780,11 +786,10 @@ export default class Context {
       const ixValidatorWithoutPool = validatorWithoutPool.indexOf(p.miningAddress);
       if (ixValidatorWithoutPool !== -1) {
         validatorWithoutPool[ixValidatorWithoutPool] = undefined;
-      } 
+      }
     });
 
-    this.currentValidatorsWithoutPools = validatorWithoutPool.filter(x=>x).map(x=> x!);
-
+    this.currentValidatorsWithoutPools = validatorWithoutPool.filter((x) => x).map((x) => x!);
     this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
   }
 

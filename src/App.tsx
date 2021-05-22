@@ -79,7 +79,7 @@ class App extends React.Component<AppProps, {}> {
           <p>
             account: <span className="text-primary">{context.myAddr}</span> |
             balance: {context.myBalance.print()} {context.coinSymbol}<br />
-            current block nr: {context.currentBlockNumber} | current epoch: {context.stakingEpoch} | epoch start Block {context.epochStartBlock} |
+            current block nr: {context.currentBlockNumber} | current epoch: {context.stakingEpoch} | epoch start Block {context.epochStartBlock} | deltaPot {context.deltaPot} | reinsertPot {context.reinsertPot}
             {/* <span className={`${this.isStakingAllowed ? 'text-success' : 'text-danger'}`}> staking {this.stakingAllowedState}: {context.stakingAllowedTimeframe} blocks</span> */}
             {validatorsWithoutPoolSection}
           </p>
