@@ -571,9 +571,9 @@ export default class Context {
         canClaimNow: () => claimableStake.amount.asNumber() > 0 && claimableStake.unlockEpoch <= this.stakingEpoch,
       };
       pool.claimableStake = claimableStake;
-      // if (isNewEpoch) {
-      pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
-      // }
+      if (isNewEpoch) {
+        pool.claimableReward = await this.getClaimableReward(pool.stakingAddress);
+      }
     } else {
       const claimableStake = {
         amount: '0',
@@ -745,7 +745,7 @@ export default class Context {
     const newCurrentValidators = [...newCurrentValidatorsUnsorted].sort();
     // apply filter here ?!
 
-    const validatorWithoutPool: Array<string | undefined> = newCurrentValidators;
+    const validatorWithoutPool: Array<string> = [...newCurrentValidators];
 
     if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     const activePoolAddrs: Array<string> = await this.stContract.methods.getPools().call();
@@ -778,18 +778,19 @@ export default class Context {
       }
     });
 
-    this.pools.forEach(async (p) => {
+    const poolsToUpdate = this.pools.map(async (p) => {
       if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync in pools'); return; }
+
       await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs,
         pendingValidatorAddrs, isNewEpoch);
-
       const ixValidatorWithoutPool = validatorWithoutPool.indexOf(p.miningAddress);
       if (ixValidatorWithoutPool !== -1) {
-        validatorWithoutPool[ixValidatorWithoutPool] = undefined;
+        validatorWithoutPool.splice(ixValidatorWithoutPool, 1);
       }
     });
 
-    this.currentValidatorsWithoutPools = validatorWithoutPool.filter((x) => x).map((x) => x!);
+    await Promise.all(poolsToUpdate);
+    this.currentValidatorsWithoutPools = validatorWithoutPool;
     this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
   }
 

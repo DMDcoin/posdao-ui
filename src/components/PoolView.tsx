@@ -155,7 +155,7 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
     }
 
     // create status element
-    function cse(boolValue: boolean, text: string, toolTip: string, toolTipNegative?: string) {
+    function cse(boolValue: boolean, text: string, toolTip: string, toolTipNegative?: string): ReactNode {
       const toolTipNegative2Use: string = toolTipNegative ?? toolTip;
 
       return <div title={boolValue ? toolTip : toolTipNegative2Use}>{b2s(boolValue)} {text}|</div>;
