@@ -81,6 +81,8 @@ export default class Context {
 
   @observable public epochStartBlock!: number;
 
+  @observable public epochStartTime!: number;
+
   @observable public deltaPot!: Amount;
 
   @observable public reinsertPot!: Amount;
@@ -441,8 +443,6 @@ export default class Context {
   // private posdaoStartBlock!: number;
 
   // TODO: we should probably get rid of either start or end block, can be calculated with epochDuration
-  private stakingEpochStartTime!: number;
-
   private stakingEpochEndTime!: number;
 
   private stakeWithdrawDisallowPeriod!: number;
@@ -493,7 +493,7 @@ export default class Context {
 
     if (this.stakingEpoch !== oldStakingEpoch) {
       this.epochStartBlock = parseInt(await this.stContract.methods.stakingEpochStartBlock().call());
-      this.stakingEpochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
+      this.epochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
 
       const deltaPotValue = await this.brContract.methods.deltaPot().call();
       console.log('got delta pot value: ', deltaPotValue);
