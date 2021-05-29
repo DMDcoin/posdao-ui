@@ -535,7 +535,6 @@ export default class Context {
 
   private async updatePool(pool: IPool,
     activePoolAddrs: Array<string>,
-    inactivePoolAddrs: Array<string>,
     toBeElectedPoolAddrs: Array<string>,
     pendingValidatorAddrs: Array<string>,
     isNewEpoch: boolean): Promise<void> {
@@ -781,7 +780,7 @@ export default class Context {
     const poolsToUpdate = this.pools.map(async (p) => {
       if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync in pools'); return; }
 
-      await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs,
+      await this.updatePool(p, activePoolAddrs, toBeElectedPoolAddrs,
         pendingValidatorAddrs, isNewEpoch);
       const ixValidatorWithoutPool = validatorWithoutPool.indexOf(p.miningAddress);
       if (ixValidatorWithoutPool !== -1) {
