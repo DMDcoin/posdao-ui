@@ -196,6 +196,8 @@ export default class Context {
 
     await ctx.subscribeToEvents(ctx.web3WS);
 
+    await ctx.retrieveOneShotInfos();
+
     return ctx;
   }
 
@@ -519,7 +521,10 @@ export default class Context {
   }
 
   private async getAvailableSince(miningAddress: string): Promise<BN> {
-    return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
+    
+    const rawResult = await this.vsContract.methods.validatorAvailableSince(miningAddress).call();
+    //console.log('available sinc:', new BN(rawResult).toString('hex'));
+    return new BN(rawResult);
   }
 
   private async getBannedUntil(miningAddress: string): Promise<BN> {
@@ -544,6 +549,7 @@ export default class Context {
     console.log(`ens: ${stakingAddress}`);
     // TODO: figure out if this value can be cached or not.
     pool.miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
+    pool.miningPublicKey = await this.vsContract.methods.getPublicKey(pool.miningAddress).call();
     console.log(`minigAddress: ${pool.miningAddress}`);
 
     const { miningAddress } = pool;
@@ -589,9 +595,13 @@ export default class Context {
     pool.bannedUntil = await this.getBannedUntil(miningAddress);
     pool.banCount = await this.getBanCount(miningAddress);
 
-    console.log('before get available since: ', pool);
+    console.log('before get available since: ', pool.availableSince);
     pool.availableSince = await this.getAvailableSince(miningAddress);
-    console.log('after get available since: ', pool);
+
+    pool.availableSinceAsText = new Date(pool.availableSince.toNumber() * 1000).toLocaleString();
+    pool.isAvailable = !pool.availableSince.isZero();
+
+    console.log('after get available since: ', pool.availableSince);
 
     // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
     // there are between 1 and n AddedPool events per pool. We're looking for the first one
@@ -644,6 +654,7 @@ export default class Context {
       isToBeElected: false,
       isPendingValidator: false,
       miningAddress: '',
+      miningPublicKey: '',
       isCurrentValidator: false,
       stakingAddress,
       ensName: '',
@@ -668,8 +679,8 @@ export default class Context {
       parts: '',
       numberOfAcks: 0,
       availableSince: new BN('0'),
-      availableSinceAsText: () => (new Date(newPool.availableSince.toNumber() * 1000)).toLocaleString(),
-      isAvailable: () => newPool.availableSince.gt(new BN(this.currentTimestamp)),
+      availableSinceAsText: '',
+      isAvailable: false
     };
     return newPool;
   }
@@ -863,6 +874,17 @@ export default class Context {
     // await this.updateCurrentValidators();
 
     await this.syncPoolsState(isNewEpoch);
+  }
+
+  private async retrieveOneShotInfos() {
+    
+    //const validatorAvailableEvents = await this.vsContract.getPastEvents("ValidatorAvailable");
+    await this.vsContract.events.ValidatorAvailable({ fromBlock: 0}).on('data', 
+    e => { console.log(e)});
+
+    await this.vsContract.events.ValidatorUnavailable({ fromBlock: 0}).on('data', 
+    e => { console.log(e)});
+    
   }
 
   private handledStEvents = new Set<number>();
