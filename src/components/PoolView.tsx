@@ -125,6 +125,9 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
       return 'inactive-pool';
     }
     if (pool.isCurrentValidator) {
+      if (pool.isPendingValidator) {
+        return 'current-and-pending-validator';
+      }
       return 'current-validator';
     }
     if (!pool.isToBeElected) {
@@ -212,20 +215,27 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
 
     let validatorInfo = <div />;
 
-    // <small>Pending Validator - Part: {pool.parts ? `${pool.parts.substr(0, 8)}
-    // ..${pool.parts.substr(pool.parts.length - 8, 8)}` : ''}</small>
+    let keyDetails = <div />;
 
-    if (pool.isPendingValidator) {
-      validatorInfo = (
-        <div>
-          <small>{`${b2s(pool.parts != null && pool.parts.length > 0)} parts written | ${b2s(pool.numberOfAcks > 0)} acks written` }</small>
-          <br />
-          <small>Pending Validator - Part : {pool.parts ? `${(((pool.parts.length - 2) / 2))} bytes` : 'none'}</small>
-          <br />
-          <small># of Acks written: {pool.numberOfAcks}</small>
-        </div>
-      );
-    }
+    keyDetails = (
+      <small>Pending Validator - Part: {pool.parts ? `${pool.parts.substr(0, 8)}
+     ..${pool.parts.substr(pool.parts.length - 8, 8)}` : ''}
+      </small>
+    );
+
+    // todo: UI - option: Show Parts and Acks written for Non-Validators.
+    // if (pool.isPendingValidator) {
+    validatorInfo = (
+      <div>
+        <small>{`${b2s(pool.parts != null && pool.parts.length > 0)} parts written | ${b2s(pool.numberOfAcks > 0)} acks written` }</small>
+        {keyDetails}
+        <br />
+        <small>Pending Validator - Part : {pool.parts ? `${(((pool.parts.length - 2) / 2))} bytes` : 'none'}</small>
+        <br />
+        <small># of Acks written: {pool.numberOfAcks}</small>
+      </div>
+    );
+    // }
 
     return (
       <tr className={this.getPoolClasses(pool)}>

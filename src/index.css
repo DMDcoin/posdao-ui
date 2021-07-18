@@ -24,6 +24,17 @@ code {
   background-color: #e6ffe6;
 }
 
+
+.current-and-pending-validator {
+  background-color: #aaffff66;
+  background: repeating-linear-gradient(
+    45deg,
+    #e6ffe6 10px
+    #e6f3ff 10px,
+    #e6f3ff 20px
+  ),
+}
+
 .not-to-be-elected {
   background-color: grey;
 }

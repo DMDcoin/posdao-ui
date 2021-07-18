@@ -521,9 +521,8 @@ export default class Context {
   }
 
   private async getAvailableSince(miningAddress: string): Promise<BN> {
-    
     const rawResult = await this.vsContract.methods.validatorAvailableSince(miningAddress).call();
-    //console.log('available sinc:', new BN(rawResult).toString('hex'));
+    // console.log('available sinc:', new BN(rawResult).toString('hex'));
     return new BN(rawResult);
   }
 
@@ -680,7 +679,7 @@ export default class Context {
       numberOfAcks: 0,
       availableSince: new BN('0'),
       availableSinceAsText: '',
-      isAvailable: false
+      isAvailable: false,
     };
     return newPool;
   }
@@ -877,14 +876,12 @@ export default class Context {
   }
 
   private async retrieveOneShotInfos() {
-    
-    //const validatorAvailableEvents = await this.vsContract.getPastEvents("ValidatorAvailable");
-    await this.vsContract.events.ValidatorAvailable({ fromBlock: 0}).on('data', 
-    e => { console.log(e)});
+    // const validatorAvailableEvents = await this.vsContract.getPastEvents("ValidatorAvailable");
+    await this.vsContract.events.ValidatorAvailable({ fromBlock: 0 }).on('data',
+      (e) => { console.log(e); });
 
-    await this.vsContract.events.ValidatorUnavailable({ fromBlock: 0}).on('data', 
-    e => { console.log(e)});
-    
+    await this.vsContract.events.ValidatorUnavailable({ fromBlock: 0 }).on('data',
+      (e) => { console.log(e); });
   }
 
   private handledStEvents = new Set<number>();
