@@ -26,13 +26,8 @@ code {
 
 
 .current-and-pending-validator {
-  background-color: #aaffff66;
-  background: repeating-linear-gradient(
-    45deg,
-    #e6ffe6 10px
-    #e6f3ff 10px,
-    #e6f3ff 20px
-  ),
+  background-image: linear-gradient(45deg, #e6ffe6 25%, #e6f3ff 25%, #e6f3ff 50%, #e6ffe6 50%, #e6ffe6 75%, #e6f3ff 75%, #e6f3ff 100%);
+  background-size: 56.57px 56.57px;
 }
 
 .not-to-be-elected {
