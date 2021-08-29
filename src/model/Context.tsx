@@ -234,7 +234,14 @@ export default class Context {
   }
 
   public static getAddressFromPublicKey(publicKey: string): string {
-    const resultBuffer = publicToAddress(Buffer.from(publicKey, 'hex'), true);
+    
+    let publicKeyCleaned = publicKey;
+
+    if (publicKey.startsWith('0x')){
+      publicKeyCleaned = publicKey.substring(2);
+    }
+
+    const resultBuffer = publicToAddress(Buffer.from(publicKeyCleaned, 'hex'), true);
     return `0x${resultBuffer.toString('hex')}`;
   }
 
@@ -261,6 +268,7 @@ export default class Context {
     try {
       const publicKeyHex = `0x${publicKey}`;
       const ip = '0x00000000000000000000000000000000';
+      console.log(`adding Pool : ${miningKeyAddr} publicKeyHex: ${publicKeyHex} ip ${ip}`);
       // <amount> argument is ignored by the contract (exists for chains with token based staking)
       const receipt = await this.stContract.methods.addPool(miningKeyAddr, publicKeyHex, ip).send(txOpts);
       console.log(`receipt: ${JSON.stringify(receipt, null, 2)}`);
@@ -799,6 +807,10 @@ export default class Context {
     });
 
     await Promise.all(poolsToUpdate);
+
+
+    this.numbersOfValidators = this.pools.filter(x=>x.isCurrentValidator).length;
+
     this.currentValidatorsWithoutPools = validatorWithoutPool;
     this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
   }
