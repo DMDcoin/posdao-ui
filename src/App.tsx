@@ -82,8 +82,21 @@ class App extends React.Component<AppProps, {}> {
             current block nr: {context.currentBlockNumber} | current epoch: {context.stakingEpoch} | epoch start Block {context.epochStartBlock} | epoch start Time {new Date(context.epochStartTime * 1000).toLocaleString()} | deltaPot {context.deltaPot} | reinsertPot {context.reinsertPot} | validators# | {context.pools.filter(x=>x.isCurrentValidator).length})
             {/* <span className={`${this.isStakingAllowed ? 'text-success' : 'text-danger'}`}> staking {this.stakingAllowedState}: {context.stakingAllowedTimeframe} blocks</span> */}
             {validatorsWithoutPoolSection}
+            <div>
+              <input type="checkbox" id="latest-block" name="latest-block" checked />
+              <label htmlFor="latest-block">latest block</label>
+              <input type="number" min="0" required></input>
+              <input onChange={(e) => this.historicChanged(e)} type="checkbox" defaultChecked={false} />
+              {/* <input             
+                {...this.props.context.showHistoric .bind({
+                  type: 'checkbox',
+              })}
+    checked={field.value}
+/> {field.label} */}
+            </div>
           </p>
         </header>
+
         <div id="poolList">
           <div className="spinner-border" hidden={!context.isSyncingPools} role="status">
             <span className="sr-only">Syncing Pools...</span>
@@ -131,9 +144,17 @@ class App extends React.Component<AppProps, {}> {
           </div>
           <button type="button" disabled={this.processing}>Remove My Pool (TODO)</button>
         </div>
+        
       </div>
     );
   }
-}
+  historicChanged(e: React.ChangeEvent<HTMLInputElement>): void {
+    
+    const isHistoric = e.target.checked;
 
+    //this.props.context.showHistoric(isHistoric);
+
+    this.props.context.showHistoric(isHistoric);
+  }
+}
 export default App;

@@ -1,4 +1,5 @@
 import Web3 from 'web3';
+// const BN = Web3.big
 import BN from 'bn.js';
 import { computed, observable } from 'mobx';
 import { BlockHeader } from 'web3-eth';
@@ -13,6 +14,8 @@ import { ValidatorSetHbbft } from '../contracts/ValidatorSetHbbft';
 import { StakingHbbftCoins } from '../contracts/StakingHbbftCoins';
 import { BlockRewardHbbftCoins } from '../contracts/BlockRewardHbbftCoins';
 import { KeyGenHistory } from '../contracts/KeyGenHistory';
+import { BlockType, NonPayableTx } from '../contracts/types';
+import { ContractOptions} from 'web3-eth-contract';
 
 // needed for querying injected web3 (e.g. from Metamask)
 declare global {
@@ -25,7 +28,7 @@ declare global {
 // for debug
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let window: any;
-window.BN = BN;
+// window.BN = BN;
 
 // TODO: check this instead: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call
 declare global {
@@ -57,9 +60,10 @@ String.prototype.isAddress = function (this: string) {
 // TODO: dry-run / estimate gas before sending actual transactions
 
 export default class Context {
+  
   @observable public currentBlockNumber!: number;
 
-  @observable public currentTimestamp!: BN;
+  @observable public currentTimestamp!: any;
 
   @observable public myAddr!: Address;
 
@@ -105,6 +109,8 @@ export default class Context {
   // where the first node(s) should take over ownership of the
   // network, but they can't.
   @observable public currentValidatorsWithoutPools: Address[] = [];
+
+  @observable public numbersOfValidators: number = 0;
 
   // class PotData {
   //   public governancePotAddress!: string;
@@ -349,7 +355,7 @@ export default class Context {
     console.assert(this.canStakeOrWithdrawNow, 'withdraw currently not allowed');
 
     const txOpts = { ...this.defaultTxOpts };
-    const amountWeiBN: BN = this.web3.utils.toWei(new BN(amount));
+    const amountWeiBN = new BN(amount);
 
     // determine available withdraw method and allowed amount
     const maxWithdrawAmount = await this.stContract.methods.maxWithdrawAllowed(poolAddr, this.myAddr).call();
@@ -428,6 +434,11 @@ export default class Context {
     return epochList.length > txEpochList.length;
   }
 
+
+  public async showHistoric(isHistoric: boolean) {
+    this.isShowHistoric = isHistoric;
+  }
+
   // ============================= PRIVATE INTERFACE ==================================
 
   // connection provided via Metamask.
@@ -449,6 +460,10 @@ export default class Context {
 
   private kghContract!: KeyGenHistory;
 
+  private isShowHistoric: boolean = false;
+
+  private showHistoricBlock: number = 0;
+
   // start block of the first epoch (epoch 0) since posdao was activated
   // private posdaoStartBlock!: number;
 
@@ -467,19 +482,48 @@ export default class Context {
   // eslint-disable-next-line no-useless-constructor,@typescript-eslint/no-empty-function
   private constructor() {}
 
+  //** retrieves call options matching the current historic settings. */
+  private blockType() : BlockType {
+    if ( this.isShowHistoric ) {
+      return this.showHistoricBlock;
+    } else {
+      return 'latest';
+    }
+  }
+
+  private callTx() : NonPayableTx {
+    
+    return { };
+  }
+
+
   private async initContracts(validatorSetContractAddress: Address): Promise<void> {
     try {
       // TODO: if a contract call fails, the stack trace doesn't show the actual line number.
       console.log('validatorSet Contract: ', validatorSetContractAddress);
-      this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
+      //this.vsContract = new ValidatorSetHbbft();
+
+      //const x : any = ValidatorSetAbi[0];
+
+      const contractOptions: ContractOptions = {};
+      // ValidatorSetAbi.
+      // const obj = JSON.parse( ValidatorSetAbi );
+      const vsContract : any = new this.web3.eth.Contract(ValidatorSetAbi as AbiItem[], validatorSetContractAddress, contractOptions);
+      this.vsContract = vsContract;
+      //this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
       console.log('queriying adress...');
-      const stAddress = await this.vsContract.methods.stakingContract().call();
+
+      
+      const stAddress = await this.vsContract.methods.stakingContract().call(this.callTx(), this.blockType());
       console.log('stAddress: ', stAddress);
-      this.stContract = new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
-      const brAddress = await this.vsContract.methods.blockRewardContract().call();
-      this.brContract = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
-      const kghAddress = await this.vsContract.methods.keyGenHistoryContract().call();
-      this.kghContract = new this.web3.eth.Contract((KeyGenHistoryAbi as AbiItem[]), kghAddress);
+      const stContract : any =  new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
+      this.stContract = stContract;
+      const brAddress = await this.vsContract.methods.blockRewardContract().call(this.callTx(), this.blockType());
+      const brContract : any = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
+      this.brContract = brContract;
+      const kghAddress = await this.vsContract.methods.keyGenHistoryContract().call(this.callTx(), this.blockType());
+      const kghContract = new this.web3.eth.Contract((KeyGenHistoryAbi as AbiItem[]), kghAddress);
+
     } catch (e) {
       console.log(`initializing contracts failed: ${e}`);
       console.log(e);
@@ -599,7 +643,7 @@ export default class Context {
     // TODO: delegatorAddrs ?!
     // pool.delegatorAddrs = Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
 
-    pool.bannedUntil = await this.getBannedUntil(miningAddress);
+    pool.bannedUntil = new BN(await this.getBannedUntil(miningAddress));
     pool.banCount = await this.getBanCount(miningAddress);
 
     console.log('before get available since: ', pool.availableSince);
