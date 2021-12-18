@@ -5,6 +5,7 @@ import { computed, observable } from 'mobx';
 import { BlockHeader } from 'web3-eth';
 import { AbiItem } from 'web3-utils';
 import { publicToAddress } from 'ethereumjs-util';
+import { ContractOptions } from 'web3-eth-contract';
 import { IPool, Amount, Address } from './Pool';
 import { abi as ValidatorSetAbi } from '../contract-abis/ValidatorSetHbbft.json';
 import { abi as StakingAbi } from '../contract-abis/StakingHbbftCoins.json';
@@ -15,7 +16,6 @@ import { StakingHbbftCoins } from '../contracts/StakingHbbftCoins';
 import { BlockRewardHbbftCoins } from '../contracts/BlockRewardHbbftCoins';
 import { KeyGenHistory } from '../contracts/KeyGenHistory';
 import { BlockType, NonPayableTx } from '../contracts/types';
-import { ContractOptions} from 'web3-eth-contract';
 
 // needed for querying injected web3 (e.g. from Metamask)
 declare global {
@@ -60,7 +60,6 @@ String.prototype.isAddress = function (this: string) {
 // TODO: dry-run / estimate gas before sending actual transactions
 
 export default class Context {
-  
   @observable public currentBlockNumber!: number;
 
   @observable public currentTimestamp!: any;
@@ -110,7 +109,11 @@ export default class Context {
   // network, but they can't.
   @observable public currentValidatorsWithoutPools: Address[] = [];
 
-  @observable public numbersOfValidators: number = 0;
+  @observable public numbersOfValidators = 0;
+
+  @observable public numbersOfPartsWritten = 0;
+
+  @observable public numbersOfAcksWritten = 0;
 
   // class PotData {
   //   public governancePotAddress!: string;
@@ -240,10 +243,9 @@ export default class Context {
   }
 
   public static getAddressFromPublicKey(publicKey: string): string {
-    
     let publicKeyCleaned = publicKey;
 
-    if (publicKey.startsWith('0x')){
+    if (publicKey.startsWith('0x')) {
       publicKeyCleaned = publicKey.substring(2);
     }
 
@@ -434,7 +436,6 @@ export default class Context {
     return epochList.length > txEpochList.length;
   }
 
-
   public async showHistoric(isHistoric: boolean) {
     this.isShowHistoric = isHistoric;
   }
@@ -460,9 +461,9 @@ export default class Context {
 
   private kghContract!: KeyGenHistory;
 
-  private isShowHistoric: boolean = false;
+  private isShowHistoric = false;
 
-  private showHistoricBlock: number = 0;
+  private showHistoricBlock = 0;
 
   // start block of the first epoch (epoch 0) since posdao was activated
   // private posdaoStartBlock!: number;
@@ -482,53 +483,53 @@ export default class Context {
   // eslint-disable-next-line no-useless-constructor,@typescript-eslint/no-empty-function
   private constructor() {}
 
-  //** retrieves call options matching the current historic settings. */
-  private blockType() : BlockType {
-    if ( this.isShowHistoric ) {
+  //* * retrieves call options matching the current historic settings. */
+  private blockType(): BlockType {
+    if (this.isShowHistoric) {
       return this.showHistoricBlock;
-    } else {
-      return 'latest';
     }
+    return 'latest';
   }
 
-  private callTx() : NonPayableTx {
-    
+  /* eslint-disable class-methods-use-this */
+  private callTx(): NonPayableTx {
     return { };
   }
-
+  /* eslint-enable class-methods-use-this */
 
   private async initContracts(validatorSetContractAddress: Address): Promise<void> {
     try {
       // TODO: if a contract call fails, the stack trace doesn't show the actual line number.
       console.log('validatorSet Contract: ', validatorSetContractAddress);
-      //this.vsContract = new ValidatorSetHbbft();
+      // this.vsContract = new ValidatorSetHbbft();
 
-      //const x : any = ValidatorSetAbi[0];
+      // const x : any = ValidatorSetAbi[0];
 
       const contractOptions: ContractOptions = {};
       // ValidatorSetAbi.
       // const obj = JSON.parse( ValidatorSetAbi );
-      const vsContract : any = new this.web3.eth.Contract(ValidatorSetAbi as AbiItem[], validatorSetContractAddress, contractOptions);
+      const vsContract: any = new this.web3.eth.Contract(ValidatorSetAbi as AbiItem[], validatorSetContractAddress, contractOptions);
       this.vsContract = vsContract;
-      //this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
+      // this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
       console.log('queriying adress...');
 
-      
       const stAddress = await this.vsContract.methods.stakingContract().call(this.callTx(), this.blockType());
       console.log('stAddress: ', stAddress);
-      const stContract : any =  new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
+      const stContract: any = new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
       this.stContract = stContract;
       const brAddress = await this.vsContract.methods.blockRewardContract().call(this.callTx(), this.blockType());
-      const brContract : any = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
+      const brContract: any = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
       this.brContract = brContract;
       const kghAddress = await this.vsContract.methods.keyGenHistoryContract().call(this.callTx(), this.blockType());
-      const kghContract = new this.web3.eth.Contract((KeyGenHistoryAbi as AbiItem[]), kghAddress);
-
+      const kghContract: any = new this.web3.eth.Contract((KeyGenHistoryAbi as AbiItem[]), kghAddress);
+      this.kghContract = kghContract;
     } catch (e) {
       console.log(`initializing contracts failed: ${e}`);
       console.log(e);
       throw e;
     }
+
+    console.log('contracts initialized');
 
     this.candidateMinStake = await this.stContract.methods.candidateMinStake().call();
     this.delegatorMinStake = await this.stContract.methods.delegatorMinStake().call();
@@ -852,10 +853,13 @@ export default class Context {
 
     await Promise.all(poolsToUpdate);
 
-
-    this.numbersOfValidators = this.pools.filter(x=>x.isCurrentValidator).length;
+    this.numbersOfValidators = this.pools.filter((x) => x.isCurrentValidator).length;
 
     this.currentValidatorsWithoutPools = validatorWithoutPool;
+
+    this.numbersOfAcksWritten = (await this.kghContract.methods.numberOfAcksWritten().call()).asNumber();
+    this.numbersOfPartsWritten = (await this.kghContract.methods.numberOfPartsWritten().call()).asNumber();
+
     this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
   }
 

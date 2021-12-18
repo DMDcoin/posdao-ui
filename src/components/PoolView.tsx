@@ -223,7 +223,6 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
       </small>
     );
 
-  
     if (pool.isPendingValidator) {
       validatorInfo = (
         <div>
