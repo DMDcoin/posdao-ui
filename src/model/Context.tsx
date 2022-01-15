@@ -33,8 +33,8 @@ declare let window: any;
 // TODO: check this instead: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call
 declare global {
   interface String {
-    print(): string; // in ATS units
-    asNumber(): number; // in ATS units
+    print(): string; // in DMD units
+    asNumber(): number; // in DMD units
     isAddress(): boolean;
   }
 }
@@ -56,7 +56,7 @@ String.prototype.isAddress = function (this: string) {
   return web3.utils.isAddress(this);
 };
 
-// TODO: be consistent about type (string vs BN vs number) and unit (ATS vs wei) for amounts
+// TODO: be consistent about type (string vs BN vs number) and unit (DMD vs wei) for amounts
 // TODO: dry-run / estimate gas before sending actual transactions
 
 export default class Context {
@@ -255,7 +255,7 @@ export default class Context {
 
   /** creates a pool for the sender account, making the sender account a posdao "candidate"
    * The caller is responsible for parameter validity, checking sender balance etc.
-   * @parm initialStake amount (in ATS) of initial candidate stake
+   * @parm initialStake amount (in DMD) of initial candidate stake
    * TODO: figure out return type and how to deal with asynchrony and errors
    */
   public async createPool(miningKeyAddr: Address, publicKey: string, initialStake: number): Promise<void> {
@@ -285,11 +285,11 @@ export default class Context {
     }
   }
 
-  // stake the given amount (in ATS) on the given pool (identified by staking address)
+  // stake the given amount (in DMD) on the given pool (identified by staking address)
   // TODO: use Amount type, but make sure it's in wei
   // TODO: figure out return type and how to deal with asynchrony and errors
   public async stake(poolAddr: Address, amount: number): Promise<void> {
-    console.log(`${this.myAddr} wants to stake ${amount} ATS on pool ${poolAddr}`);
+    console.log(`${this.myAddr} wants to stake ${amount} DMD on pool ${poolAddr}`);
 
     if (!this.canStakeOrWithdrawNow) {
       return;
@@ -313,7 +313,7 @@ export default class Context {
    * Available only while fromPool is NOT in the validator set AND during staking epoch
    */
   public async moveStake(fromPoolAddr: Address, toPoolAddr: Address, amount: number): Promise<void> {
-    console.log(`${this.myAddr} wants to move ${amount} ATS from pool ${fromPoolAddr} to ${toPoolAddr}`);
+    console.log(`${this.myAddr} wants to move ${amount} DMD from pool ${fromPoolAddr} to ${toPoolAddr}`);
 
     if (!this.canStakeOrWithdrawNow) {
       return;
@@ -332,7 +332,7 @@ export default class Context {
     }
   }
 
-  /** withraw the given amount (in ATS) from the given pool (identified by staking address)
+  /** withraw the given amount (in ) from the given pool (identified by staking address)
    *
    * A withdrawal can happen in 2 ways:
    * a) If the given pool is in the current or in the next validator set, withdraw() "orders" a withdrawal.
@@ -346,13 +346,13 @@ export default class Context {
    * TODO: deal with frozen stakes due to banned pools
    *
    * @param poolAddr: address of the pool from which to withdraw part or all of the stake
-   * @param amount: the amount to be withdrawn (in ATS units). Needs to be <= the current stake in that pool
+   * @param amount: the amount to be withdrawn (in DMD units). Needs to be <= the current stake in that pool
    *
    * @return true if a consecutive claim transaction is needed in order to transfer the requested amount
    */
   // TODO: refactor to reduce redundancy with method stake()
   public async withdraw(poolAddr: Address, amount: number): Promise<boolean> {
-    console.log(`${this.myAddr} wants to withdraw ${amount} ATS from pool ${poolAddr}`);
+    console.log(`${this.myAddr} wants to withdraw ${amount} DMD from pool ${poolAddr}`);
 
     console.assert(this.canStakeOrWithdrawNow, 'withdraw currently not allowed');
 
@@ -409,12 +409,11 @@ export default class Context {
   public async claimReward(poolAddr: Address): Promise<boolean> {
     console.log(`${this.myAddr} wants to claim the available reward from pool ${poolAddr}`);
     const txOpts = { ...this.defaultTxOpts };
-    txOpts.gasLimit = '8000000'; // this txs are expensive
+    txOpts.gasLimit = '800000000'; // this txs are expensive
 
     const epochList = await this.brContract.methods.epochsToClaimRewardFrom(poolAddr, this.myAddr).call();
 
-    // gas cost is about 35k per epoch. Thus for 150 epochs it should be safely below 6M gas
-    const txEpochList = epochList.slice(0, 150);
+    const txEpochList = epochList.slice(0, 1500);
 
     console.log(`claimReward: claiming for ${txEpochList.length} of ${epochList.length} epochs...`);
 
@@ -476,7 +475,7 @@ export default class Context {
   // <from> is set when initializing
   // TODO: this should be readonly to prevent accidental overwriting. How?
   private defaultTxOpts = {
-    from: '', gasPrice: '100000000000', gasLimit: '6000000', value: '0',
+    from: '', gasPrice: '1000000000', gasLimit: '800000000', value: '0',
   };
 
   // it's not useless, but made private
