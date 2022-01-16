@@ -413,7 +413,7 @@ export default class Context {
 
     const epochList = await this.brContract.methods.epochsToClaimRewardFrom(poolAddr, this.myAddr).call();
 
-    const txEpochList = epochList.slice(0, 1500);
+    const txEpochList = epochList.slice(0, 5000);
 
     console.log(`claimReward: claiming for ${txEpochList.length} of ${epochList.length} epochs...`);
 
