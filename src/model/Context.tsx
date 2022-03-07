@@ -357,7 +357,7 @@ export default class Context {
     console.assert(this.canStakeOrWithdrawNow, 'withdraw currently not allowed');
 
     const txOpts = { ...this.defaultTxOpts };
-    const amountWeiBN = new BN(amount);
+    const amountWeiBN = new BN(this.web3.utils.toWei(amount.toString()));
 
     // determine available withdraw method and allowed amount
     const maxWithdrawAmount = await this.stContract.methods.maxWithdrawAllowed(poolAddr, this.myAddr).call();

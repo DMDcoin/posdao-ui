@@ -32,6 +32,7 @@ Context.initialize(wsUrl, ensRpcUrl, validatorSetContractAddress)
       document.getElementById('root'),
     );
   }).catch((err) => {
+    console.log(`initializing failed:`, err);
     alert(`initializing failed: ${err}`);
   });
 
