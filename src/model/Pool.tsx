@@ -12,6 +12,7 @@ export interface IPool {
   readonly stakingAddress: Address;
   ensName: string;
   miningAddress: Address;
+  miningPublicKey: string;
   addedInEpoch: number;
   isCurrentValidator: boolean;
   candidateStake: Amount;
@@ -32,8 +33,8 @@ export interface IPool {
 
   // availability
   availableSince: BN;
-  availableSinceAsText(): string;
-  isAvailable(): boolean;
+  availableSinceAsText: string;
+  isAvailable: boolean;
 }
 
 export interface IClaimableStake {

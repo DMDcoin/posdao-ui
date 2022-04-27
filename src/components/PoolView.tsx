@@ -125,6 +125,9 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
       return 'inactive-pool';
     }
     if (pool.isCurrentValidator) {
+      if (pool.isPendingValidator) {
+        return 'current-and-pending-validator';
+      }
       return 'current-validator';
     }
     if (!pool.isToBeElected) {
@@ -155,7 +158,7 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
     }
 
     // create status element
-    function cse(boolValue: boolean, text: string, toolTip: string, toolTipNegative?: string) {
+    function cse(boolValue: boolean, text: string, toolTip: string, toolTipNegative?: string): ReactNode {
       const toolTipNegative2Use: string = toolTipNegative ?? toolTip;
 
       return <div title={boolValue ? toolTip : toolTipNegative2Use}>{b2s(boolValue)} {text}|</div>;
@@ -178,7 +181,7 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
         {cse(pool.isMe, 'self', `This is your pool,  connected to your address: ${myAddr}`, 'This pool does not belong to your current address.')}
         {cse(pool.isActive, 'active', 'Is this a active pool, the owner has enough stake on it.', 'This pool is inactive')}
         {cse(pool.isCurrentValidator, 'current', 'This pool is currently a  validator in this epoch', 'pool is not a validator in this epoch.')}
-        {cse(pool.isAvailable(), 'available', `This node is tracked as being available since ${pool.availableSinceAsText()}`, 'Node is tracked as unavailable.')}
+        {cse(pool.isAvailable, 'available', `This node is tracked as being available since ${pool.availableSinceAsText}`, 'Node is tracked as unavailable.')}
         {cse(pool.isToBeElected, 'to be elected', 'pool fullfills all requirements and is an electable candidate.', 'pool does not fullfill all requirements and is not able to be elected.')}
         {cse(pool.isPendingValidator, 'pending', 'pool is a pending validator for the next epoch, if the node manages to write acks and parts.', 'pool is not a pending validator')}
         {cse(pool.isBanned(), 'banned', 'pool has been banned', 'pool is not banned')}
@@ -190,9 +193,12 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
     if (pool.isCurrentValidator) {
       extraInfo += 'in validator set of current epoch\n';
     }
-    if (!pool.isAvailable() && !pool.isToBeElected) {
+    if (!pool.isAvailable && !pool.isToBeElected) {
       extraInfo += `requires to notify availability. Not available since ${PoolView.bigNumberToTimespan(pool.availableSince)}`;
     }
+
+    extraInfo += `available since:  ${pool.availableSince.toString(10)} ${pool.availableSinceAsText}`;
+
     if (pool.banCount > 0) {
       extraInfo += `ban counter: ${pool.banCount}\n`;
     }
@@ -209,13 +215,19 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
 
     let validatorInfo = <div />;
 
-    // <small>Pending Validator - Part: {pool.parts ? `${pool.parts.substr(0, 8)}
-    // ..${pool.parts.substr(pool.parts.length - 8, 8)}` : ''}</small>
+    let keyDetails = <div />;
+
+    keyDetails = (
+      <small>Pending Validator - Part: {pool.parts ? `${pool.parts.substr(0, 8)}
+     ..${pool.parts.substr(pool.parts.length - 8, 8)}` : ''}
+      </small>
+    );
 
     if (pool.isPendingValidator) {
       validatorInfo = (
         <div>
           <small>{`${b2s(pool.parts != null && pool.parts.length > 0)} parts written | ${b2s(pool.numberOfAcks > 0)} acks written` }</small>
+          {keyDetails}
           <br />
           <small>Pending Validator - Part : {pool.parts ? `${(((pool.parts.length - 2) / 2))} bytes` : 'none'}</small>
           <br />
@@ -230,6 +242,7 @@ export default class PoolView extends React.Component<PoolViewProps, {}> {
           { pool.ensName && <div className="text-monospace-">{pool.ensName}</div> }
           <span className={`text-monospace ${pool.isMe ? ' text-primary' : ''}`}>{pool.stakingAddress}</span><br />
           <small className="text-monospace-">(mining: {pool.miningAddress})</small>
+          <small>publicKey:  {pool.miningPublicKey} </small>
           {validatorInfo}
           <small>{rawInfo}</small>
 

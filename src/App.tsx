@@ -11,12 +11,11 @@ interface AppProps {
 
 @observer
 class App extends React.Component<AppProps, {}> {
-  
   private publicKey = '';
   private stakeAmountStr = '';
 
   private examplePublicKey = '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-  
+
   @observable private processing = false;
 
   @observable private calculatedMiningAddress = '';
@@ -79,11 +78,24 @@ class App extends React.Component<AppProps, {}> {
           <p>
             account: <span className="text-primary">{context.myAddr}</span> |
             balance: {context.myBalance.print()} {context.coinSymbol}<br />
-            current block nr: {context.currentBlockNumber} | current epoch: {context.stakingEpoch} | epoch start Block {context.epochStartBlock} |
+            current block nr: {context.currentBlockNumber} | current epoch: {context.stakingEpoch} | epoch start Block {context.epochStartBlock} | epoch start Time {new Date(context.epochStartTime * 1000).toLocaleString()} | deltaPot {context.deltaPot} | reinsertPot {context.reinsertPot} | validators# {context.pools.filter((x) => x.isCurrentValidator).length} | parts: {context.numbersOfPartsWritten} | acks: {context.numbersOfAcksWritten})
             {/* <span className={`${this.isStakingAllowed ? 'text-success' : 'text-danger'}`}> staking {this.stakingAllowedState}: {context.stakingAllowedTimeframe} blocks</span> */}
             {validatorsWithoutPoolSection}
+            <div>
+              {/* <input type="checkbox" id="latest-block" name="latest-block" checked />
+              <label htmlFor="latest-block">latest block</label>
+              <input type="number" min="0" required></input>
+              <input onChange={(e) => this.historicChanged(e)} type="checkbox" defaultChecked={false} /> */}
+              {/* <input
+                {...this.props.context.showHistoric .bind({
+                  type: 'checkbox',
+              })}
+    checked={field.value}
+/> {field.label} */}
+            </div>
           </p>
         </header>
+
         <div id="poolList">
           <div className="spinner-border" hidden={!context.isSyncingPools} role="status">
             <span className="sr-only">Syncing Pools...</span>
@@ -113,10 +125,15 @@ class App extends React.Component<AppProps, {}> {
         <div id="addPool" hidden={context.iHaveAPool || context.isSyncingPools}>
           <form spellCheck={false}>
             <label>pool address:   <input type="text" value={context.myAddr} readOnly title="determined by current wallet address" /></label> <br />
-            <label>public key: <input type="text" defaultValue={this.examplePublicKey} onChange={(e) => {
+            <label>public key: <input
+              type="text"
+              defaultValue={this.examplePublicKey}
+              onChange={(e) => {
                 this.publicKey = e.currentTarget.value;
                 this.calculatedMiningAddress = Context.getAddressFromPublicKeyInfoText(this.publicKey);
-                }} /></label> <br />
+              }}
+            />
+            </label> <br />
             <label>mining address:</label><label>{this.calculatedMiningAddress}</label><br />
             <label>stake amount ({context.coinSymbol}):  <input type="number" min={minStakeAmount} defaultValue={this.stakeAmountStr} onChange={(e) => (this.stakeAmountStr = e.currentTarget.value)} /></label> <br />
             <div className="spinner-border" hidden={!this.processing} role="status">
@@ -131,9 +148,16 @@ class App extends React.Component<AppProps, {}> {
           </div>
           <button type="button" disabled={this.processing}>Remove My Pool (TODO)</button>
         </div>
+
       </div>
     );
   }
-}
+  historicChanged(e: React.ChangeEvent<HTMLInputElement>): void {
+    const isHistoric = e.target.checked;
 
+    // this.props.context.showHistoric(isHistoric);
+
+    this.props.context.showHistoric(isHistoric);
+  }
+}
 export default App;

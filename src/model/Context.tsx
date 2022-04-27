@@ -1,9 +1,11 @@
 import Web3 from 'web3';
+// const BN = Web3.big
 import BN from 'bn.js';
 import { computed, observable } from 'mobx';
 import { BlockHeader } from 'web3-eth';
 import { AbiItem } from 'web3-utils';
 import { publicToAddress } from 'ethereumjs-util';
+import { ContractOptions } from 'web3-eth-contract';
 import { IPool, Amount, Address } from './Pool';
 import { abi as ValidatorSetAbi } from '../contract-abis/ValidatorSetHbbft.json';
 import { abi as StakingAbi } from '../contract-abis/StakingHbbftCoins.json';
@@ -13,6 +15,7 @@ import { ValidatorSetHbbft } from '../contracts/ValidatorSetHbbft';
 import { StakingHbbftCoins } from '../contracts/StakingHbbftCoins';
 import { BlockRewardHbbftCoins } from '../contracts/BlockRewardHbbftCoins';
 import { KeyGenHistory } from '../contracts/KeyGenHistory';
+import { BlockType, NonPayableTx } from '../contracts/types';
 
 // needed for querying injected web3 (e.g. from Metamask)
 declare global {
@@ -25,13 +28,13 @@ declare global {
 // for debug
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare let window: any;
-window.BN = BN;
+// window.BN = BN;
 
 // TODO: check this instead: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call
 declare global {
   interface String {
-    print(): string; // in ATS units
-    asNumber(): number; // in ATS units
+    print(): string; // in DMD units
+    asNumber(): number; // in DMD units
     isAddress(): boolean;
   }
 }
@@ -53,13 +56,13 @@ String.prototype.isAddress = function (this: string) {
   return web3.utils.isAddress(this);
 };
 
-// TODO: be consistent about type (string vs BN vs number) and unit (ATS vs wei) for amounts
+// TODO: be consistent about type (string vs BN vs number) and unit (DMD vs wei) for amounts
 // TODO: dry-run / estimate gas before sending actual transactions
 
 export default class Context {
   @observable public currentBlockNumber!: number;
 
-  @observable public currentTimestamp!: BN;
+  @observable public currentTimestamp!: any;
 
   @observable public myAddr!: Address;
 
@@ -81,6 +84,12 @@ export default class Context {
 
   @observable public epochStartBlock!: number;
 
+  @observable public epochStartTime!: number;
+
+  @observable public deltaPot!: Amount;
+
+  @observable public reinsertPot!: Amount;
+
   // TODO: find better name
   @observable public canStakeOrWithdrawNow = false;
 
@@ -95,10 +104,16 @@ export default class Context {
   @observable public currentValidators: Address[] = [];
 
   // list of validators, where no pool is available.
-  // this can happen, in situations, 
-  // where the first node(s) should take over ownership of the 
+  // this can happen, in situations,
+  // where the first node(s) should take over ownership of the
   // network, but they can't.
   @observable public currentValidatorsWithoutPools: Address[] = [];
+
+  @observable public numbersOfValidators = 0;
+
+  @observable public numbersOfPartsWritten = 0;
+
+  @observable public numbersOfAcksWritten = 0;
 
   // class PotData {
   //   public governancePotAddress!: string;
@@ -190,6 +205,8 @@ export default class Context {
 
     await ctx.subscribeToEvents(ctx.web3WS);
 
+    await ctx.retrieveOneShotInfos();
+
     return ctx;
   }
 
@@ -226,13 +243,19 @@ export default class Context {
   }
 
   public static getAddressFromPublicKey(publicKey: string): string {
-    const resultBuffer = publicToAddress(Buffer.from(publicKey, 'hex'), true);
+    let publicKeyCleaned = publicKey;
+
+    if (publicKey.startsWith('0x')) {
+      publicKeyCleaned = publicKey.substring(2);
+    }
+
+    const resultBuffer = publicToAddress(Buffer.from(publicKeyCleaned, 'hex'), true);
     return `0x${resultBuffer.toString('hex')}`;
   }
 
   /** creates a pool for the sender account, making the sender account a posdao "candidate"
    * The caller is responsible for parameter validity, checking sender balance etc.
-   * @parm initialStake amount (in ATS) of initial candidate stake
+   * @parm initialStake amount (in DMD) of initial candidate stake
    * TODO: figure out return type and how to deal with asynchrony and errors
    */
   public async createPool(miningKeyAddr: Address, publicKey: string, initialStake: number): Promise<void> {
@@ -253,6 +276,7 @@ export default class Context {
     try {
       const publicKeyHex = `0x${publicKey}`;
       const ip = '0x00000000000000000000000000000000';
+      console.log(`adding Pool : ${miningKeyAddr} publicKeyHex: ${publicKeyHex} ip ${ip}`);
       // <amount> argument is ignored by the contract (exists for chains with token based staking)
       const receipt = await this.stContract.methods.addPool(miningKeyAddr, publicKeyHex, ip).send(txOpts);
       console.log(`receipt: ${JSON.stringify(receipt, null, 2)}`);
@@ -261,11 +285,11 @@ export default class Context {
     }
   }
 
-  // stake the given amount (in ATS) on the given pool (identified by staking address)
+  // stake the given amount (in DMD) on the given pool (identified by staking address)
   // TODO: use Amount type, but make sure it's in wei
   // TODO: figure out return type and how to deal with asynchrony and errors
   public async stake(poolAddr: Address, amount: number): Promise<void> {
-    console.log(`${this.myAddr} wants to stake ${amount} ATS on pool ${poolAddr}`);
+    console.log(`${this.myAddr} wants to stake ${amount} DMD on pool ${poolAddr}`);
 
     if (!this.canStakeOrWithdrawNow) {
       return;
@@ -289,7 +313,7 @@ export default class Context {
    * Available only while fromPool is NOT in the validator set AND during staking epoch
    */
   public async moveStake(fromPoolAddr: Address, toPoolAddr: Address, amount: number): Promise<void> {
-    console.log(`${this.myAddr} wants to move ${amount} ATS from pool ${fromPoolAddr} to ${toPoolAddr}`);
+    console.log(`${this.myAddr} wants to move ${amount} DMD from pool ${fromPoolAddr} to ${toPoolAddr}`);
 
     if (!this.canStakeOrWithdrawNow) {
       return;
@@ -308,7 +332,7 @@ export default class Context {
     }
   }
 
-  /** withraw the given amount (in ATS) from the given pool (identified by staking address)
+  /** withraw the given amount (in ) from the given pool (identified by staking address)
    *
    * A withdrawal can happen in 2 ways:
    * a) If the given pool is in the current or in the next validator set, withdraw() "orders" a withdrawal.
@@ -322,18 +346,18 @@ export default class Context {
    * TODO: deal with frozen stakes due to banned pools
    *
    * @param poolAddr: address of the pool from which to withdraw part or all of the stake
-   * @param amount: the amount to be withdrawn (in ATS units). Needs to be <= the current stake in that pool
+   * @param amount: the amount to be withdrawn (in DMD units). Needs to be <= the current stake in that pool
    *
    * @return true if a consecutive claim transaction is needed in order to transfer the requested amount
    */
   // TODO: refactor to reduce redundancy with method stake()
   public async withdraw(poolAddr: Address, amount: number): Promise<boolean> {
-    console.log(`${this.myAddr} wants to withdraw ${amount} ATS from pool ${poolAddr}`);
+    console.log(`${this.myAddr} wants to withdraw ${amount} DMD from pool ${poolAddr}`);
 
     console.assert(this.canStakeOrWithdrawNow, 'withdraw currently not allowed');
 
     const txOpts = { ...this.defaultTxOpts };
-    const amountWeiBN: BN = this.web3.utils.toWei(new BN(amount));
+    const amountWeiBN = new BN(this.web3.utils.toWei(amount.toString()));
 
     // determine available withdraw method and allowed amount
     const maxWithdrawAmount = await this.stContract.methods.maxWithdrawAllowed(poolAddr, this.myAddr).call();
@@ -385,12 +409,11 @@ export default class Context {
   public async claimReward(poolAddr: Address): Promise<boolean> {
     console.log(`${this.myAddr} wants to claim the available reward from pool ${poolAddr}`);
     const txOpts = { ...this.defaultTxOpts };
-    txOpts.gasLimit = '8000000'; // this txs are expensive
+    txOpts.gasLimit = '800000000'; // this txs are expensive
 
     const epochList = await this.brContract.methods.epochsToClaimRewardFrom(poolAddr, this.myAddr).call();
 
-    // gas cost is about 35k per epoch. Thus for 150 epochs it should be safely below 6M gas
-    const txEpochList = epochList.slice(0, 150);
+    const txEpochList = epochList.slice(0, 5000);
 
     console.log(`claimReward: claiming for ${txEpochList.length} of ${epochList.length} epochs...`);
 
@@ -410,6 +433,10 @@ export default class Context {
     curPool.claimableReward = newClaimableReward;
 
     return epochList.length > txEpochList.length;
+  }
+
+  public async showHistoric(isHistoric: boolean) {
+    this.isShowHistoric = isHistoric;
   }
 
   // ============================= PRIVATE INTERFACE ==================================
@@ -433,12 +460,14 @@ export default class Context {
 
   private kghContract!: KeyGenHistory;
 
+  private isShowHistoric = false;
+
+  private showHistoricBlock = 0;
+
   // start block of the first epoch (epoch 0) since posdao was activated
   // private posdaoStartBlock!: number;
 
   // TODO: we should probably get rid of either start or end block, can be calculated with epochDuration
-  private stakingEpochStartTime!: number;
-
   private stakingEpochEndTime!: number;
 
   private stakeWithdrawDisallowPeriod!: number;
@@ -446,31 +475,60 @@ export default class Context {
   // <from> is set when initializing
   // TODO: this should be readonly to prevent accidental overwriting. How?
   private defaultTxOpts = {
-    from: '', gasPrice: '100000000000', gasLimit: '6000000', value: '0',
+    from: '', gasPrice: '1000000000', gasLimit: '800000000', value: '0',
   };
 
   // it's not useless, but made private
   // eslint-disable-next-line no-useless-constructor,@typescript-eslint/no-empty-function
   private constructor() {}
 
+  //* * retrieves call options matching the current historic settings. */
+  private blockType(): BlockType {
+    if (this.isShowHistoric) {
+      return this.showHistoricBlock;
+    }
+    return 'latest';
+  }
+
+  /* eslint-disable class-methods-use-this */
+  private callTx(): NonPayableTx {
+    return { };
+  }
+  /* eslint-enable class-methods-use-this */
+
   private async initContracts(validatorSetContractAddress: Address): Promise<void> {
     try {
       // TODO: if a contract call fails, the stack trace doesn't show the actual line number.
       console.log('validatorSet Contract: ', validatorSetContractAddress);
-      this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
+      // this.vsContract = new ValidatorSetHbbft();
+
+      // const x : any = ValidatorSetAbi[0];
+
+      const contractOptions: ContractOptions = {};
+      // ValidatorSetAbi.
+      // const obj = JSON.parse( ValidatorSetAbi );
+      const vsContract: any = new this.web3.eth.Contract(ValidatorSetAbi as AbiItem[], validatorSetContractAddress, contractOptions);
+      this.vsContract = vsContract;
+      // this.vsContract = new this.web3.eth.Contract((ValidatorSetAbi as AbiItem[]), validatorSetContractAddress);
       console.log('queriying adress...');
-      const stAddress = await this.vsContract.methods.stakingContract().call();
+
+      const stAddress = await this.vsContract.methods.stakingContract().call(this.callTx(), this.blockType());
       console.log('stAddress: ', stAddress);
-      this.stContract = new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
-      const brAddress = await this.vsContract.methods.blockRewardContract().call();
-      this.brContract = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
-      const kghAddress = await this.vsContract.methods.keyGenHistoryContract().call();
-      this.kghContract = new this.web3.eth.Contract((KeyGenHistoryAbi as AbiItem[]), kghAddress);
+      const stContract: any = new this.web3.eth.Contract((StakingAbi as AbiItem[]), stAddress);
+      this.stContract = stContract;
+      const brAddress = await this.vsContract.methods.blockRewardContract().call(this.callTx(), this.blockType());
+      const brContract: any = new this.web3WS.eth.Contract((BlockRewardAbi as AbiItem[]), brAddress);
+      this.brContract = brContract;
+      const kghAddress = await this.vsContract.methods.keyGenHistoryContract().call(this.callTx(), this.blockType());
+      const kghContract: any = new this.web3.eth.Contract((KeyGenHistoryAbi as AbiItem[]), kghAddress);
+      this.kghContract = kghContract;
     } catch (e) {
       console.log(`initializing contracts failed: ${e}`);
       console.log(e);
       throw e;
     }
+
+    console.log('contracts initialized');
 
     this.candidateMinStake = await this.stContract.methods.candidateMinStake().call();
     this.delegatorMinStake = await this.stContract.methods.delegatorMinStake().call();
@@ -489,7 +547,15 @@ export default class Context {
 
     if (this.stakingEpoch !== oldStakingEpoch) {
       this.epochStartBlock = parseInt(await this.stContract.methods.stakingEpochStartBlock().call());
-      this.stakingEpochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
+      this.epochStartTime = parseInt(await this.stContract.methods.stakingEpochStartTime().call());
+
+      const deltaPotValue = await this.brContract.methods.deltaPot().call();
+      console.log('got delta pot value: ', deltaPotValue);
+      this.deltaPot = this.web3.utils.fromWei(deltaPotValue, 'ether');
+
+      const reinsertPotValue = await this.brContract.methods.reinsertPot().call();
+      console.log('got reinsert pot value: ', reinsertPotValue);
+      this.reinsertPot = this.web3.utils.fromWei(reinsertPotValue, 'ether');
 
       // could be calculated instead of called from smart contract?!
       this.stakingEpochEndTime = parseInt(await this.stContract.methods.stakingFixedEpochEndTime().call());
@@ -507,7 +573,9 @@ export default class Context {
   }
 
   private async getAvailableSince(miningAddress: string): Promise<BN> {
-    return new BN(await this.vsContract.methods.validatorAvailableSince(miningAddress).call());
+    const rawResult = await this.vsContract.methods.validatorAvailableSince(miningAddress).call();
+    // console.log('available sinc:', new BN(rawResult).toString('hex'));
+    return new BN(rawResult);
   }
 
   private async getBannedUntil(miningAddress: string): Promise<BN> {
@@ -523,7 +591,6 @@ export default class Context {
 
   private async updatePool(pool: IPool,
     activePoolAddrs: Array<string>,
-    inactivePoolAddrs: Array<string>,
     toBeElectedPoolAddrs: Array<string>,
     pendingValidatorAddrs: Array<string>,
     isNewEpoch: boolean): Promise<void> {
@@ -533,6 +600,7 @@ export default class Context {
     console.log(`ens: ${stakingAddress}`);
     // TODO: figure out if this value can be cached or not.
     pool.miningAddress = await this.vsContract.methods.miningByStakingAddress(stakingAddress).call();
+    pool.miningPublicKey = await this.vsContract.methods.getPublicKey(pool.miningAddress).call();
     console.log(`minigAddress: ${pool.miningAddress}`);
 
     const { miningAddress } = pool;
@@ -575,12 +643,16 @@ export default class Context {
     // TODO: delegatorAddrs ?!
     // pool.delegatorAddrs = Array<string> = await this.stContract.methods.poolDelegators(stakingAddress).call();
 
-    pool.bannedUntil = await this.getBannedUntil(miningAddress);
+    pool.bannedUntil = new BN(await this.getBannedUntil(miningAddress));
     pool.banCount = await this.getBanCount(miningAddress);
 
-    console.log('before get available since: ', pool);
+    console.log('before get available since: ', pool.availableSince);
     pool.availableSince = await this.getAvailableSince(miningAddress);
-    console.log('after get available since: ', pool);
+
+    pool.availableSinceAsText = new Date(pool.availableSince.toNumber() * 1000).toLocaleString();
+    pool.isAvailable = !pool.availableSince.isZero();
+
+    console.log('after get available since: ', pool.availableSince);
 
     // const stEvents = await this.stContract.getPastEvents('allEvents', { fromBlock: 0 });
     // there are between 1 and n AddedPool events per pool. We're looking for the first one
@@ -633,6 +705,7 @@ export default class Context {
       isToBeElected: false,
       isPendingValidator: false,
       miningAddress: '',
+      miningPublicKey: '',
       isCurrentValidator: false,
       stakingAddress,
       ensName: '',
@@ -657,8 +730,8 @@ export default class Context {
       parts: '',
       numberOfAcks: 0,
       availableSince: new BN('0'),
-      availableSinceAsText: () => (new Date(newPool.availableSince.toNumber() * 1000)).toLocaleString(),
-      isAvailable: () => newPool.availableSince.gt(new BN(this.currentTimestamp)),
+      availableSinceAsText: '',
+      isAvailable: false,
     };
     return newPool;
   }
@@ -733,7 +806,7 @@ export default class Context {
     const newCurrentValidators = [...newCurrentValidatorsUnsorted].sort();
     // apply filter here ?!
 
-    const validatorWithoutPool: Array<string | undefined> = newCurrentValidators;
+    const validatorWithoutPool: Array<string> = [...newCurrentValidators];
 
     if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync'); return; }
     const activePoolAddrs: Array<string> = await this.stContract.methods.getPools().call();
@@ -764,26 +837,27 @@ export default class Context {
       if (!findResult) {
         this.pools.push(this.createEmptyPool(poolAddress));
       }
-
     });
 
-    //find current validators that are not listed as active pools.
-    this.currentValidators.forEach((validator) => {
-      
-    });
-
-    this.pools.forEach(async (p) => {
+    const poolsToUpdate = this.pools.map(async (p) => {
       if (blockNumberAtBegin !== this.currentBlockNumber) { console.warn('detected slow pool sync in pools'); return; }
-      await this.updatePool(p, activePoolAddrs, inactivePoolAddrs, toBeElectedPoolAddrs,
-        pendingValidatorAddrs, isNewEpoch);
 
+      await this.updatePool(p, activePoolAddrs, toBeElectedPoolAddrs,
+        pendingValidatorAddrs, isNewEpoch);
       const ixValidatorWithoutPool = validatorWithoutPool.indexOf(p.miningAddress);
       if (ixValidatorWithoutPool !== -1) {
-        validatorWithoutPool[ixValidatorWithoutPool] = undefined;
-      } 
+        validatorWithoutPool.splice(ixValidatorWithoutPool, 1);
+      }
     });
 
-    this.currentValidatorsWithoutPools = validatorWithoutPool.filter(x=>x).map(x=> x!);
+    await Promise.all(poolsToUpdate);
+
+    this.numbersOfValidators = this.pools.filter((x) => x.isCurrentValidator).length;
+
+    this.currentValidatorsWithoutPools = validatorWithoutPool;
+
+    this.numbersOfAcksWritten = (await this.kghContract.methods.numberOfAcksWritten().call()).asNumber();
+    this.numbersOfPartsWritten = (await this.kghContract.methods.numberOfPartsWritten().call()).asNumber();
 
     this.pools = this.pools.sort((a, b) => a.stakingAddress.localeCompare(b.stakingAddress));
   }
@@ -858,6 +932,15 @@ export default class Context {
     // await this.updateCurrentValidators();
 
     await this.syncPoolsState(isNewEpoch);
+  }
+
+  private async retrieveOneShotInfos() {
+    // const validatorAvailableEvents = await this.vsContract.getPastEvents("ValidatorAvailable");
+    await this.vsContract.events.ValidatorAvailable({ fromBlock: 0 }).on('data',
+      (e) => { console.log(e); });
+
+    await this.vsContract.events.ValidatorUnavailable({ fromBlock: 0 }).on('data',
+      (e) => { console.log(e); });
   }
 
   private handledStEvents = new Set<number>();

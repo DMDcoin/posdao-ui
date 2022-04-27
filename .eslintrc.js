@@ -53,7 +53,7 @@ module.exports = {
       'radix': 0,
 
       // copied over from airbnb, but increased from 100 to 120
-      'max-len': ['warn', 120, 2, {
+      'max-len': ['warn', 140, 2, {
         ignoreUrls: true,
         ignoreComments: false,
         ignoreRegExpLiterals: true,
